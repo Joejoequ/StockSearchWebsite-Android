@@ -1,9 +1,8 @@
 package com.example.stocksearch
 
 import VolleyRequest
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 
 import androidx.compose.material3.DismissDirection
@@ -80,12 +78,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 
 import androidx.compose.ui.text.withStyle
-import androidx.core.content.ContextCompat.startActivity
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.reflect.KFunction1
+import kotlin.reflect.KSuspendFunction1
 
 
 class MainActivity : ComponentActivity() {
@@ -98,14 +97,13 @@ class MainActivity : ComponentActivity() {
                 MainContent()
             }
 
+        }
     }
-}}
+}
 
 object GlobalValues {
     var indentationValue = 16.dp
 }
-
-
 
 
 @Composable
@@ -116,8 +114,7 @@ fun MainContent() {
         topBar = {
             MyAppTopBar()
         },
-    ) {
-            innerPadding ->
+    ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -126,27 +123,33 @@ fun MainContent() {
             color = Color.White
         ) {
 
-Column {
-    TimeSection()
-    MyAppLabel(labelText = "PORTFOLIO")
+            Column {
+                TimeSection()
+                MyAppLabel(labelText = "PORTFOLIO")
 
 
-    PortfolioSection()
-    MyAppLabel(labelText = "FAVORITES")
-    WatchlistSection()
+                PortfolioSection()
+                MyAppLabel(labelText = "FAVORITES")
+                WatchlistSection()
 
-    ReferenceSection()
+                ReferenceSection()
 
 
-} } }
+            }
+        }
+    }
 
 }
 
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyAppTopBar( showCloseBtn: Boolean = true,showSearchBtn: Boolean = true,showBackBtn: Boolean = true,title:String="Stocks"){
+fun MyAppTopBar(
+    showCloseBtn: Boolean = true,
+    showSearchBtn: Boolean = true,
+    showBackBtn: Boolean = true,
+    title: String = "Stocks"
+) {
     Surface(shadowElevation = 8.dp) {
         TopAppBar(
             colors = TopAppBarDefaults.topAppBarColors(
@@ -169,51 +172,62 @@ fun MyAppTopBar( showCloseBtn: Boolean = true,showSearchBtn: Boolean = true,show
 
             actions = {
 
-                if (showSearchBtn){
+                if (showSearchBtn) {
                     IconButton(onClick = {/* Do Something*/ }) {
                         Icon(Icons.Filled.Search, null)
-                    }}
+                    }
+                }
 
                 if (showCloseBtn) {
                     IconButton(onClick = {/* Do Something*/ }) {
                         Icon(Icons.Filled.Close, null)
-                    }}
+                    }
+                }
 
             }
         )
     }
 
 }
+
 @Composable
-fun TimeSection(){
-    Surface ( modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = GlobalValues.indentationValue, vertical = 14.dp)){
-        Text("21 March 2024",color = Color.Gray,
-            fontSize = 18.sp)
+fun TimeSection() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = GlobalValues.indentationValue, vertical = 14.dp)
+    ) {
+        Text(
+            "21 March 2024", color = Color.Gray,
+            fontSize = 18.sp
+        )
     }
 }
 
 
-
 @Composable
-fun MyAppLabel(labelText:String){
+fun MyAppLabel(labelText: String) {
 
     Surface(
-        color =Color(0xFFE1E1E1),
+        color = Color(0xFFE1E1E1),
         modifier = Modifier.fillMaxWidth()
-    ){
-    Text(labelText,color = Color.Black,
-        fontSize = 13.sp, modifier = Modifier.padding(horizontal = GlobalValues.indentationValue, vertical = 6.dp))
+    ) {
+        Text(
+            labelText,
+            color = Color.Black,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(horizontal = GlobalValues.indentationValue, vertical = 6.dp)
+        )
 
     }
 }
 
 
 @Composable
-fun PortfolioSection(){
+fun PortfolioSection() {
 
-    val portfolioStockViewModel: PortfolioViewModel = PortfolioViewModel(VolleyRequest(LocalContext.current))
+    val portfolioStockViewModel: PortfolioViewModel =
+        PortfolioViewModel(VolleyRequest(LocalContext.current))
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
@@ -226,38 +240,32 @@ fun PortfolioSection(){
         }
     }
 
-    PortfolioBalance(portfolioViewModel =portfolioStockViewModel)
+    PortfolioBalance(portfolioViewModel = portfolioStockViewModel)
 
-    val stocksListState=portfolioStockViewModel.stocksState
+    val stocksListState = portfolioStockViewModel.stocksState
 
 
-    StockCardList(stocksListState,withDismiss = false)
-
+    StockCardList(stocksListState, withDismiss = false)
 
 
 }
 
 
-
-
-
-
-
 @Composable
-fun PortfolioBalance(portfolioViewModel: PortfolioViewModel){
+fun PortfolioBalance(portfolioViewModel: PortfolioViewModel) {
 
 
-
-
-    Surface ( modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = GlobalValues.indentationValue, vertical = 3.dp)){
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = GlobalValues.indentationValue, vertical = 3.dp)
+    ) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column{
+            Column {
                 Text(
                     text = "Net Worth",
                     color = Color.Gray,
@@ -289,21 +297,18 @@ fun PortfolioBalance(portfolioViewModel: PortfolioViewModel){
         }
 
 
-
-
     }
 
 
 
-Divider()
+    Divider()
 }
-
 
 
 @Composable
 fun StockCardList(
-    stocksListState: StateFlow<List<Stock>>, withDismiss: Boolean ,
-    removeMethod: KFunction1<Stock, Unit>? = null
+    stocksListState: StateFlow<List<Stock>>, withDismiss: Boolean,
+    removeMethod: KSuspendFunction1<Stock, Boolean>? = null
 ) {
 
     val stocksList by stocksListState.collectAsState()
@@ -315,27 +320,28 @@ fun StockCardList(
             key = { _, item -> item.hashCode() }
         ) { _, stock ->
 
-if(withDismiss && removeMethod!=null){ StockCardWithDismiss(stock,onRemove = removeMethod)
-}else{
+            if (withDismiss && removeMethod != null) {
+                StockCardWithDismiss(stock, onRemove = removeMethod)
+            } else {
 
-            StockCard(stock)}
+                StockCard(stock)
+            }
             Divider()
         }
     }
 
 
-
 }
-
 
 
 @Composable
 fun StockCard(singleStock: Stock) {
 
 
-    Surface ( modifier = Modifier
-        .fillMaxWidth()
-        ){
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
 
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -343,87 +349,93 @@ fun StockCard(singleStock: Stock) {
 
         ) {
 
-            Row (modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = GlobalValues.indentationValue, vertical = 5.dp),horizontalArrangement = Arrangement.SpaceBetween){
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = GlobalValues.indentationValue, vertical = 5.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
 
 
-            Column {
-                Text(
-                    text = singleStock.ticker,
-                    color = Color.Black,
-                    fontSize = 22.sp,
-
-                    )
-                Text(
-                    text = singleStock.name,
-                    color = Color.Gray,
-                    fontSize = 18.sp,
-
-                    )
-            }
-
-            Row {
-
-
-            Column( horizontalAlignment = Alignment.End) {
-
-
-
-                Text(
-                    text = "$${"%.2f".format(singleStock.currentValue)}",
-                    color = Color.Black,
-                    fontSize = 22.sp,
-
-                    )
-
-
-                Row {
-
-                    val fontColor:Any
-                    val imageResource:Int?
-                    if (singleStock.valueChange >0.0) {
-                         imageResource = R.drawable.trending_up
-                        fontColor= Color(0xFF37AF4C)
-                    } else if (singleStock.valueChange <0.0){
-                         imageResource = R.drawable.trending_down
-                        fontColor=Color(0xFFEB502E)
-                    } else {
-                        imageResource = null
-                        fontColor= Color.Black
-                    }
-
-
-                    if (imageResource!=null){
-                        Image(
-                            painter = painterResource(imageResource),
-                            contentDescription = "My Image"
-                        )
-                    }
-
+                Column {
                     Text(
-
-                        text = "$${"%.2f".format(singleStock.valueChange)}",
-                        color = fontColor,
-                        fontSize = 18.sp,
+                        text = singleStock.ticker,
+                        color = Color.Black,
+                        fontSize = 22.sp,
 
                         )
-
                     Text(
-
-                        text = "(${"%.2f".format(singleStock.percentValueChange)}%)",
-                        color = fontColor,
+                        text = singleStock.name,
+                        color = Color.Gray,
                         fontSize = 18.sp,
 
                         )
                 }
 
-            }
+                Row {
 
 
-Image(painter =  painterResource(R.drawable.right_arrow), contentDescription = "detail", modifier = Modifier.align(Alignment.CenterVertically))
+                    Column(horizontalAlignment = Alignment.End) {
+
+
+                        Text(
+                            text = "$${"%.2f".format(singleStock.currentValue)}",
+                            color = Color.Black,
+                            fontSize = 22.sp,
+
+                            )
+
+
+                        Row {
+
+                            val fontColor: Any
+                            val imageResource: Int?
+                            if (singleStock.valueChange > 0.0) {
+                                imageResource = R.drawable.trending_up
+                                fontColor = Color(0xFF37AF4C)
+                            } else if (singleStock.valueChange < 0.0) {
+                                imageResource = R.drawable.trending_down
+                                fontColor = Color(0xFFEB502E)
+                            } else {
+                                imageResource = null
+                                fontColor = Color.Black
+                            }
+
+
+                            if (imageResource != null) {
+                                Image(
+                                    painter = painterResource(imageResource),
+                                    contentDescription = "My Image"
+                                )
+                            }
+
+                            Text(
+
+                                text = "$${"%.2f".format(singleStock.valueChange)}",
+                                color = fontColor,
+                                fontSize = 18.sp,
+
+                                )
+
+                            Text(
+
+                                text = "(${"%.2f".format(singleStock.percentValueChange)}%)",
+                                color = fontColor,
+                                fontSize = 18.sp,
+
+                                )
+                        }
+
+                    }
+
+
+                    Image(
+                        painter = painterResource(R.drawable.right_arrow),
+                        contentDescription = "detail",
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    )
+                }
             }
-        }
         }
     }
 
@@ -433,11 +445,7 @@ Image(painter =  painterResource(R.drawable.right_arrow), contentDescription = "
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DismissBackground(dismissState: DismissState) {
-    val color = when (dismissState.dismissDirection) {
-        DismissDirection.StartToEnd -> Color(0xFFFF1744)
-        DismissDirection.EndToStart -> Color(0xFF1DE9B6)
-        null -> Color.Transparent
-    }
+    val color = Color(0xFFFF1744)
     val direction = dismissState.dismissDirection
 
     Row(
@@ -448,15 +456,13 @@ fun DismissBackground(dismissState: DismissState) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        if (direction == DismissDirection.StartToEnd) Icon(
-            Icons.Default.Delete,
-            contentDescription = "delete"
-        )
-        Spacer(modifier = Modifier)
-        if (direction == DismissDirection.EndToStart) Icon(
 
-            painter = painterResource(R.drawable.full_star),
-            contentDescription = "Archive"
+        Spacer(modifier = Modifier)
+        Icon(
+
+            painter = painterResource(R.drawable.delete),
+            contentDescription = "Delete",
+            tint = Color.White
         )
     }
 }
@@ -466,25 +472,36 @@ fun DismissBackground(dismissState: DismissState) {
 @Composable
 fun StockCardWithDismiss(
     singleStock: Stock,
-    onRemove: (Stock) -> Unit
+    onRemove: KSuspendFunction1<Stock, Boolean>
 ) {
+
+
     val context = LocalContext.current
     var show by remember { mutableStateOf(true) }
     val currentItem by rememberUpdatedState(singleStock)
     val dismissState = rememberDismissState(
+
+
         confirmValueChange = {
             if (it == DismissValue.DismissedToStart || it == DismissValue.DismissedToEnd) {
+
+
                 show = false
+
+
                 true
+
+
             } else false
         }, positionalThreshold = { 150.dp.toPx() }
     )
     AnimatedVisibility(
-        show,exit = fadeOut(spring())
+        show, exit = fadeOut(spring())
     ) {
         SwipeToDismiss(
             state = dismissState,
             modifier = Modifier,
+            directions = setOf(DismissDirection.EndToStart),
             background = {
                 DismissBackground(dismissState)
             },
@@ -496,15 +513,27 @@ fun StockCardWithDismiss(
 
     LaunchedEffect(show) {
         if (!show) {
-            delay(800)
-            onRemove(currentItem)
-            Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
+
+            val result=onRemove(currentItem)
+
+            if (result) {
+
+                Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Failed to remove item", Toast.LENGTH_SHORT).show()
+            }
+
+
         }
     }
+
+
 }
+
 @Composable
-fun WatchlistSection(){
-    val watchlistStockViewModel: WatchlistViewModel = WatchlistViewModel(VolleyRequest(LocalContext.current))
+fun WatchlistSection() {
+    val watchlistStockViewModel: WatchlistViewModel =
+        WatchlistViewModel(VolleyRequest(LocalContext.current))
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
@@ -514,23 +543,24 @@ fun WatchlistSection(){
             }
             delay(15000)
         }
+
     }
 
 
+    val stocksListState = watchlistStockViewModel.stocksState
 
-    val stocksListState=watchlistStockViewModel.stocksState
 
-
-    StockCardList(stocksListState, withDismiss = true,removeMethod = watchlistStockViewModel::removeItem)
+    StockCardList(
+        stocksListState,
+        withDismiss = true,
+        removeMethod = watchlistStockViewModel::removeItem
+    )
 
 }
 
 
-
-
-
 @Composable
-fun ReferenceSection(){
+fun ReferenceSection() {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -550,8 +580,8 @@ fun ReferenceSection(){
                 )
             }
         }.toAnnotatedString()
-val uriHandler= LocalUriHandler.current
-        ClickableText(text = text,style = TextStyle(
+        val uriHandler = LocalUriHandler.current
+        ClickableText(text = text, style = TextStyle(
 
             fontStyle = FontStyle.Italic,
             fontSize = 16.sp
@@ -563,16 +593,12 @@ val uriHandler= LocalUriHandler.current
 
 
                 if (url != null) {
-uriHandler.openUri(url)
+                    uriHandler.openUri(url)
                 }
             }
 
 
-
-
-
-            )
-
+        )
 
 
     }

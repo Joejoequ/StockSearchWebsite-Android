@@ -1,11 +1,15 @@
 package com.example.stocksearch
 
 import VolleyRequest
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 
 class WatchlistViewModel(private val volleyRequest: VolleyRequest): ViewModel() {
@@ -17,36 +21,75 @@ class WatchlistViewModel(private val volleyRequest: VolleyRequest): ViewModel() 
 
     init {
 
-_stocksState.update { test() }
+
     }
 
 
-    fun removeItem(currentItem: Stock) {
+    suspend fun removeItem(currentItem: Stock) :Boolean{
+
         _stocksState.update {
             val mutableList = it.toMutableList()
             mutableList.remove(currentItem)
             mutableList
         }
+
+
+
+            val response = volleyRequest.sendWatchlistRemoveRequest(currentItem.ticker)
+
+            if (response != null && response.getString("message") == "SUCCESS") {
+                return true
+            } else {
+                fetchData()
+                return false
+            }
+
+
     }
 
 
-    private fun test() = listOf(
-        Stock("Jod", "Hello",1.0,1.0,1.0),
-        Stock("Jdd", "xllo",2.0,0.0,2.3),
-        Stock("3", "3",2.0,-2.3,2.3),
 
-    )
 
     suspend fun fetchData() {
 
 
+        val response :JSONArray?= volleyRequest.fetchWatchlistDataFromAPI()
 
-        //_stocksState.update { }
-    }
+        if (response!=null) {
+            val stockList = mutableListOf<Stock>()
 
-    suspend fun getPortfolioStockList() {
 
-        //_stocksState.update { stocks }
+
+            for (i in 0 until response.length()) {
+                val stockObject =response.getJSONObject(i)
+
+
+                val ticker = stockObject.getString("ticker")
+
+                val name=stockObject.getString("name")
+
+                val price = stockObject.getDouble("currentPrice")
+                val priceChange = stockObject.getDouble("priceChange")
+                val percentChange = stockObject.getDouble("percentChange")
+
+
+
+
+
+
+                val stock = Stock(ticker, name, price,priceChange,percentChange)
+                stockList.add(stock)
+
+
+
+            }
+
+
+            _stocksState.update { stockList }
+
+
+
+        }
     }
 
 
