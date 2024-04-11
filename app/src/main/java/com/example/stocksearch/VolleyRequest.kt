@@ -3,6 +3,7 @@ import android.util.Log
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.stocksearch.UserService
 import kotlinx.coroutines.Dispatchers
@@ -18,13 +19,14 @@ class VolleyRequest(private val context: Context) {
 
     suspend fun fetchPortfolioDataFromAPI(): JSONObject? {
 
-        Log.d("Volley","Portfolio Req Sent")
+
         return withContext(Dispatchers.IO) {
             val url = "https://cs571a3-418806.uc.r.appspot.com/api/portfolio?userid="+UserService.getUserId()
-            Log.d("Send to",url)
+
             val response = kotlin.coroutines.suspendCoroutine<JSONObject?> { continuation ->
                 val jsonObjectRequest = JsonObjectRequest(Request.Method.GET, url, null,
                     { response ->
+
                         continuation.resume(response)
                     },
                     { error ->
@@ -35,6 +37,8 @@ class VolleyRequest(private val context: Context) {
 
                 requestQueue.add(jsonObjectRequest)
             }
+
+
 
 
             if (response != null) {

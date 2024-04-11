@@ -1,8 +1,9 @@
 package com.example.stocksearch
 
 import VolleyRequest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -67,10 +68,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 
 
 import androidx.compose.ui.text.AnnotatedString
@@ -79,10 +80,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 
 import androidx.compose.ui.text.withStyle
+import androidx.core.content.ContextCompat.startActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlin.reflect.KFunction1
 
 
 class MainActivity : ComponentActivity() {
@@ -228,7 +231,7 @@ fun PortfolioSection(){
     val stocksListState=portfolioStockViewModel.stocksState
 
 
-    PortfolioStockCardList(stocksListState)
+    StockCardList(stocksListState,withDismiss = false)
 
 
 
@@ -298,7 +301,10 @@ Divider()
 
 
 @Composable
-fun PortfolioStockCardList(stocksListState: StateFlow<List<Stock>>) {
+fun StockCardList(
+    stocksListState: StateFlow<List<Stock>>, withDismiss: Boolean ,
+    removeMethod: KFunction1<Stock, Unit>? = null
+) {
 
     val stocksList by stocksListState.collectAsState()
     LazyColumn {
@@ -309,8 +315,10 @@ fun PortfolioStockCardList(stocksListState: StateFlow<List<Stock>>) {
             key = { _, item -> item.hashCode() }
         ) { _, stock ->
 
+if(withDismiss && removeMethod!=null){ StockCardWithDismiss(stock,onRemove = removeMethod)
+}else{
 
-            StockCard(stock)
+            StockCard(stock)}
             Divider()
         }
     }
@@ -507,31 +515,18 @@ fun WatchlistSection(){
             delay(15000)
         }
     }
-    WatchlistStockCardList(watchlistStockViewModel= watchlistStockViewModel)
+
+
+
+    val stocksListState=watchlistStockViewModel.stocksState
+
+
+    StockCardList(stocksListState, withDismiss = true,removeMethod = watchlistStockViewModel::removeItem)
 
 }
 
 
-@Composable
-fun WatchlistStockCardList(watchlistStockViewModel: WatchlistViewModel) {
 
-    val stocksList by watchlistStockViewModel.stocksState.collectAsState()
-    LazyColumn {
-
-        itemsIndexed(
-            items = stocksList,
-            // Provide a unique key based on the email content
-            key = { _, item -> item.hashCode() }
-        ) { _, stock ->
-
-            Divider()
-            StockCardWithDismiss(stock,onRemove = watchlistStockViewModel::removeItem)
-        }
-    }
-
-
-
-}
 
 
 @Composable
@@ -555,13 +550,31 @@ fun ReferenceSection(){
                 )
             }
         }.toAnnotatedString()
-
-        Text(text = text,style = TextStyle(
+val uriHandler= LocalUriHandler.current
+        ClickableText(text = text,style = TextStyle(
 
             fontStyle = FontStyle.Italic,
             fontSize = 16.sp
         ),
-            modifier = Modifier.padding(16.dp))
+            modifier = Modifier.padding(16.dp), onClick = { offset ->
+
+                val url = text.getStringAnnotations("URL", offset, offset)
+                    .firstOrNull()?.item
+
+
+                if (url != null) {
+uriHandler.openUri(url)
+                }
+            }
+
+
+
+
+
+            )
+
+
+
     }
 }
 
