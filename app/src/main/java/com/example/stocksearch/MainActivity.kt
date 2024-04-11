@@ -2,6 +2,7 @@ package com.example.stocksearch
 
 import VolleyRequest
 import android.os.Bundle
+import android.util.Log
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -66,7 +67,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 
 
@@ -123,9 +126,11 @@ fun MainContent() {
 Column {
     TimeSection()
     MyAppLabel(labelText = "PORTFOLIO")
+
+
     PortfolioSection()
     MyAppLabel(labelText = "FAVORITES")
-
+    WatchlistSection()
 
     ReferenceSection()
 
@@ -212,6 +217,7 @@ fun PortfolioSection(){
 
             withContext(Dispatchers.IO) {
                 portfolioStockViewModel.fetchData()
+
             }
             delay(15000)
         }
@@ -221,7 +227,8 @@ fun PortfolioSection(){
 
     val stocksListState=portfolioStockViewModel.stocksState
 
-    StockCardList(stocksListState)
+
+    PortfolioStockCardList(stocksListState)
 
 
 
@@ -235,6 +242,8 @@ fun PortfolioSection(){
 
 @Composable
 fun PortfolioBalance(portfolioViewModel: PortfolioViewModel){
+
+
 
 
     Surface ( modifier = Modifier
@@ -283,13 +292,13 @@ fun PortfolioBalance(portfolioViewModel: PortfolioViewModel){
 
 
 
-
+Divider()
 }
 
 
 
 @Composable
-fun StockCardList(stocksListState:StateFlow<List<Stock>>) {
+fun PortfolioStockCardList(stocksListState: StateFlow<List<Stock>>) {
 
     val stocksList by stocksListState.collectAsState()
     LazyColumn {
@@ -300,28 +309,38 @@ fun StockCardList(stocksListState:StateFlow<List<Stock>>) {
             key = { _, item -> item.hashCode() }
         ) { _, stock ->
 
-            Divider()
+
             StockCard(stock)
+            Divider()
         }
     }
 
 
 
 }
+
+
+
 @Composable
 fun StockCard(singleStock: Stock) {
 
 
     Surface ( modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = GlobalValues.indentationValue, vertical = 3.dp)){
+        ){
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth()
+
 
         ) {
-            Column{
+
+            Row (modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = GlobalValues.indentationValue, vertical = 5.dp),horizontalArrangement = Arrangement.SpaceBetween){
+
+
+            Column {
                 Text(
                     text = singleStock.ticker,
                     color = Color.Black,
@@ -397,7 +416,7 @@ fun StockCard(singleStock: Stock) {
 Image(painter =  painterResource(R.drawable.right_arrow), contentDescription = "detail", modifier = Modifier.align(Alignment.CenterVertically))
             }
         }
-
+        }
     }
 
 
@@ -488,8 +507,27 @@ fun WatchlistSection(){
             delay(15000)
         }
     }
+    WatchlistStockCardList(watchlistStockViewModel= watchlistStockViewModel)
+
+}
 
 
+@Composable
+fun WatchlistStockCardList(watchlistStockViewModel: WatchlistViewModel) {
+
+    val stocksList by watchlistStockViewModel.stocksState.collectAsState()
+    LazyColumn {
+
+        itemsIndexed(
+            items = stocksList,
+            // Provide a unique key based on the email content
+            key = { _, item -> item.hashCode() }
+        ) { _, stock ->
+
+            Divider()
+            StockCardWithDismiss(stock,onRemove = watchlistStockViewModel::removeItem)
+        }
+    }
 
 
 

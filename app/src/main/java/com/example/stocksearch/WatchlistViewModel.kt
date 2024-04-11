@@ -38,14 +38,14 @@ _stocksState.update { test() }
     )
 
     suspend fun fetchData() {
-        val response :JSONObject?= volleyRequest.fetchPortfolioDataFromAPI()
+
 
 
         //_stocksState.update { }
     }
 
     suspend fun getPortfolioStockList() {
-        val stocks = volleyRequest.fetchPortfolioDataFromAPI()
+
         //_stocksState.update { stocks }
     }
 

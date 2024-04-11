@@ -17,14 +17,19 @@ class VolleyRequest(private val context: Context) {
     }
 
     suspend fun fetchPortfolioDataFromAPI(): JSONObject? {
+
+        Log.d("Volley","Portfolio Req Sent")
         return withContext(Dispatchers.IO) {
             val url = "https://cs571a3-418806.uc.r.appspot.com/api/portfolio?userid="+UserService.getUserId()
+            Log.d("Send to",url)
             val response = kotlin.coroutines.suspendCoroutine<JSONObject?> { continuation ->
                 val jsonObjectRequest = JsonObjectRequest(Request.Method.GET, url, null,
                     { response ->
                         continuation.resume(response)
                     },
-                    {
+                    { error ->
+
+                        Log.e("Volley Error", error.toString())
                         continuation.resume(null)
                     })
 
@@ -36,6 +41,7 @@ class VolleyRequest(private val context: Context) {
                 Log.d("Portfolio API Response", response.toString())
                 response
             } else {
+                Log.d("Portfolio API Response","NULL")
                 null
             }
         }
