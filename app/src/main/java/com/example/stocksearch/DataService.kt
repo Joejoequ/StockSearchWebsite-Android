@@ -1,5 +1,6 @@
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
@@ -13,7 +14,11 @@ import kotlin.coroutines.resume
 
 object DataService {
 
+
+    var watchlistLoaded=mutableStateOf(false)
     private lateinit var requestQueue: RequestQueue
+
+    var portofolioLoaded= mutableStateOf(false)
     fun init(context: Context) {
         requestQueue = Volley.newRequestQueue(context.applicationContext)
     }
@@ -24,6 +29,7 @@ object DataService {
         val request = JsonObjectRequest(Request.Method.GET, url, null,
             { response ->
                 Log.d("Portfolio API Response", response.toString())
+                portofolioLoaded.value=true
                 callback(response)
             },
             { error ->
@@ -43,6 +49,7 @@ object DataService {
             { response ->
 
                 Log.d("Watchlist API Response", response.toString())
+                watchlistLoaded.value=true
                 callback(response)
             },
             { error ->

@@ -110,6 +110,35 @@ object GlobalValues {
 @Composable
 fun MainContent() {
 
+    val portfolioViewModel: PortfolioViewModel =
+        PortfolioViewModel()
+    LaunchedEffect(key1 = Unit) {
+        while (true) {
+
+
+            withContext(Dispatchers.IO) {
+                portfolioViewModel.fetchData()
+
+            }
+            delay(15000)
+        }
+    }
+
+
+    val watchlistViewModel: WatchlistViewModel =
+        WatchlistViewModel()
+    LaunchedEffect(key1 = Unit) {
+        while (true) {
+
+
+            withContext(Dispatchers.IO) {
+                watchlistViewModel.fetchData()
+            }
+            delay(15000)
+        }
+
+    }
+
 
     Scaffold(
         topBar = {
@@ -124,18 +153,38 @@ fun MainContent() {
             color = Color.White
         ) {
 
+
+            val watchlistLoaded by remember { DataService.watchlistLoaded }
+
+            val portofolioLoaded by remember { DataService.portofolioLoaded }
+if (watchlistLoaded&&portofolioLoaded){
             Column {
                 TimeSection()
                 MyAppLabel(labelText = "PORTFOLIO")
 
 
-                PortfolioSection()
+                PortfolioSection(portfolioViewModel)
                 MyAppLabel(labelText = "FAVORITES")
-                WatchlistSection()
+                WatchlistSection(watchlistViewModel)
 
                 ReferenceSection()
 
 
+            }
+}else{
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier,
+            color = Color(0xFF512DA8),
+        )
+    }
             }
         }
     }
@@ -225,25 +274,13 @@ fun MyAppLabel(labelText: String) {
 
 
 @Composable
-fun PortfolioSection() {
-
-    val portfolioStockViewModel: PortfolioViewModel =
-        PortfolioViewModel()
-    LaunchedEffect(key1 = Unit) {
-        while (true) {
+fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
 
 
-            withContext(Dispatchers.IO) {
-                portfolioStockViewModel.fetchData()
 
-            }
-            delay(15000)
-        }
-    }
+    PortfolioBalance(portfolioViewModel = portfolioViewModel)
 
-    PortfolioBalance(portfolioViewModel = portfolioStockViewModel)
-
-    val stocksListState = portfolioStockViewModel.stocksState
+    val stocksListState = portfolioViewModel.stocksState
 
 
     StockCardList(stocksListState, withDismiss = false)
@@ -516,7 +553,7 @@ fun StockCardWithDismiss(
         if (!show) {
 
             val result =onRemove(currentItem)
-            
+
             if (result) {
                 Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
             } else {
@@ -531,29 +568,17 @@ fun StockCardWithDismiss(
 }
 
 @Composable
-fun WatchlistSection() {
-    val watchlistStockViewModel: WatchlistViewModel =
-        WatchlistViewModel()
-    LaunchedEffect(key1 = Unit) {
-        while (true) {
+fun WatchlistSection(watchlistViewModel: WatchlistViewModel) {
 
 
-            withContext(Dispatchers.IO) {
-                watchlistStockViewModel.fetchData()
-            }
-            delay(15000)
-        }
 
-    }
-
-
-    val stocksListState = watchlistStockViewModel.stocksState
+    val stocksListState = watchlistViewModel.stocksState
 
 
     StockCardList(
         stocksListState,
         withDismiss = true,
-        removeMethod = watchlistStockViewModel::removeItem
+        removeMethod = watchlistViewModel::removeItem
     )
 
 }
@@ -610,4 +635,19 @@ fun GreetingPreview() {
     StockSearchTheme {
         MainContent()
     }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun test() {
+    StockSearchTheme {
+        CircularProgressIndicator(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            color = Color(0xFF512DA8),
+        )
+    }
+
 }
