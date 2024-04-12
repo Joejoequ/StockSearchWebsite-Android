@@ -1,6 +1,7 @@
 package com.example.stocksearch
 
-import VolleyRequest
+import DataService
+import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.json.JSONObject
 
-class PortfolioViewModel(private val volleyRequest: VolleyRequest): ViewModel() {
+class PortfolioViewModel(): ViewModel() {
 
     private val _stocksState = MutableStateFlow(emptyList<Stock>())
     val stocksState: StateFlow<List<Stock>> = _stocksState.asStateFlow()
@@ -36,6 +37,8 @@ class PortfolioViewModel(private val volleyRequest: VolleyRequest): ViewModel() 
 
 
 
+
+
     }
 
 
@@ -43,49 +46,52 @@ class PortfolioViewModel(private val volleyRequest: VolleyRequest): ViewModel() 
 
 
 
-    suspend fun fetchData() {
+    fun fetchData() {
+
+        DataService.fetchPortfolioDataFromAPI(
+            callback = { response ->
+                val stockList = mutableListOf<Stock>()
+                var totalValue=0.0
+                netWorth=0.0
+                val stocksArray = response.getJSONArray("stocks")
+
+                for (i in 0 until stocksArray.length()) {
+                    val stockObject = stocksArray.getJSONObject(i)
 
 
-        val response :JSONObject?= volleyRequest.fetchPortfolioDataFromAPI()
+                    val ticker = stockObject.getString("ticker")
 
-        if (response!=null) {
-            val stockList = mutableListOf<Stock>()
-            var totalValue=0.0
-            netWorth=0.0
-            val stocksArray = response.getJSONArray("stocks")
-
-            for (i in 0 until stocksArray.length()) {
-                val stockObject = stocksArray.getJSONObject(i)
+                    val quantity=stockObject.getInt("quantity")
+                    val cost=stockObject.getDouble("cost")
+                    val price = stockObject.getDouble("price")
 
 
-                val ticker = stockObject.getString("ticker")
+                    val avgCost=cost/quantity
+                    val currentValue=quantity*price
 
-                val quantity=stockObject.getInt("quantity")
-                val cost=stockObject.getDouble("cost")
-                val price = stockObject.getDouble("price")
+                    val totalChange=(price-avgCost)*quantity
 
+                    val percentChange=(totalChange/cost)*100
 
-                val avgCost=cost/quantity
-                val currentValue=quantity*price
-
-                val totalChange=(price-avgCost)*quantity
-
-                val percentChange=(totalChange/cost)*100
-
-                val stock = Stock(ticker, "$quantity shares", currentValue,totalChange,percentChange)
-                stockList.add(stock)
+                    val stock = Stock(ticker, "$quantity shares", currentValue,totalChange,percentChange)
+                    stockList.add(stock)
 
 
-                totalValue+=currentValue
+                    totalValue+=currentValue
+                }
+
+
+                _stocksState.update { stockList }
+                portfolioBalance= response.getDouble("balance")
+                netWorth=totalValue+portfolioBalance
+
+
+            },
+            errorCallback = { error ->
+
             }
+        )
 
-
-            _stocksState.update { stockList }
-            portfolioBalance= response.getDouble("balance")
-            netWorth=totalValue+portfolioBalance
-
-
-        }
     }
 
 

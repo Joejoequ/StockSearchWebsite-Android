@@ -1,6 +1,6 @@
 package com.example.stocksearch
 
-import VolleyRequest
+import DataService
 import android.os.Bundle
 import android.util.Log
 
@@ -78,17 +78,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 
 import androidx.compose.ui.text.withStyle
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.KSuspendFunction1
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        DataService.init(this)
         setTheme(R.style.Theme_StockSearch)
         super.onCreate(savedInstanceState)
         setContent {
@@ -227,7 +228,7 @@ fun MyAppLabel(labelText: String) {
 fun PortfolioSection() {
 
     val portfolioStockViewModel: PortfolioViewModel =
-        PortfolioViewModel(VolleyRequest(LocalContext.current))
+        PortfolioViewModel()
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
@@ -514,10 +515,9 @@ fun StockCardWithDismiss(
     LaunchedEffect(show) {
         if (!show) {
 
-            val result=onRemove(currentItem)
-
+            val result =onRemove(currentItem)
+            
             if (result) {
-
                 Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context, "Failed to remove item", Toast.LENGTH_SHORT).show()
@@ -533,7 +533,7 @@ fun StockCardWithDismiss(
 @Composable
 fun WatchlistSection() {
     val watchlistStockViewModel: WatchlistViewModel =
-        WatchlistViewModel(VolleyRequest(LocalContext.current))
+        WatchlistViewModel()
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
