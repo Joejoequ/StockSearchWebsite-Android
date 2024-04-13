@@ -55,21 +55,34 @@ class WatchlistViewModel() : ViewModel() {
 
 
     fun fetchData() {
+try {
+
 
         DataService.fetchWatchlistDataFromAPI(
             callback = { response ->
 
+
+
+
+
                 val stockList = mutableListOf<Stock>()
-
-
 
                 for (i in 0 until response.length()) {
                     val stockObject = response.getJSONObject(i)
                     val ticker = stockObject.getString("ticker")
                     val name = stockObject.getString("name")
                     val price = stockObject.getDouble("currentPrice")
-                    val priceChange = stockObject.getDouble("priceChange")
-                    val percentChange = stockObject.getDouble("percentChange")
+
+
+                       val priceChange = stockObject.getDouble("priceChange")
+
+
+
+
+                       val percentChange = stockObject.getDouble("percentChange")
+
+
+
                     val stock = Stock(ticker, name, price, priceChange, percentChange)
                     stockList.add(stock)
                 }
@@ -79,7 +92,10 @@ class WatchlistViewModel() : ViewModel() {
             errorCallback = { error ->
 
             }
-        )
+        )}
+catch (e:Exception){
+    e.message?.let { Log.d("Error", it) }
+}
     }
 }
 

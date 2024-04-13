@@ -1,9 +1,11 @@
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import com.android.volley.DefaultRetryPolicy
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
+import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
@@ -17,7 +19,7 @@ object DataService {
 
     var watchlistLoaded=mutableStateOf(false)
     private lateinit var requestQueue: RequestQueue
-
+    val timeout = 10000
     var portofolioLoaded= mutableStateOf(false)
     fun init(context: Context) {
         requestQueue = Volley.newRequestQueue(context.applicationContext)
@@ -33,9 +35,15 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Portfolio API Response","Error")
+                Log.d("Portfolio API Response","Error ${error.message}")
                 errorCallback("Error: ${error.message}")
             })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
 
         requestQueue.add(request)
 
@@ -53,10 +61,16 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Watchlist API Response","Error")
+                Log.d("Watchlist API Response","Error $error")
+
                 errorCallback("Error: ${error.message}")
             })
 
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
         requestQueue.add(request)
 
     }

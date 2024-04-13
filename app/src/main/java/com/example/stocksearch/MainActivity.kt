@@ -1,6 +1,7 @@
 package com.example.stocksearch
 
 import DataService
+
 import android.os.Bundle
 import android.util.Log
 
@@ -87,6 +88,46 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.KSuspendFunction1
 
 
+
+
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.interaction.MutableInteractionSource
+
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.AddCircle
+
+import androidx.compose.material3.Card
+
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
+
+import androidx.compose.ui.unit.dp
+import sh.calvin.reorderable.ReorderableColumn
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyColumnState
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         DataService.init(this)
@@ -158,19 +199,54 @@ fun MainContent() {
 
             val portofolioLoaded by remember { DataService.portofolioLoaded }
 if (watchlistLoaded&&portofolioLoaded){
-            Column {
-                TimeSection()
-                MyAppLabel(labelText = "PORTFOLIO")
+/*
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+
+        item {
+            TimeSection()
+        }
 
 
-                PortfolioSection(portfolioViewModel)
-                MyAppLabel(labelText = "FAVORITES")
-                WatchlistSection(watchlistViewModel)
-
-                ReferenceSection()
+        item {
+            MyAppLabel(labelText = "PORTFOLIO")
+        }
 
 
-            }
+        item {
+            PortfolioSection(portfolioViewModel)
+        }
+
+
+        item {
+            MyAppLabel(labelText = "FAVORITES")
+        }
+
+
+        item {
+            WatchlistSection(watchlistViewModel)
+        }
+
+
+        item {
+            ReferenceSection()
+        }
+    }*/
+
+    Column (modifier = Modifier
+        .fillMaxHeight()
+        .verticalScroll(rememberScrollState())){
+        TimeSection()
+        MyAppLabel(labelText = "PORTFOLIO")
+        PortfolioSection(portfolioViewModel)
+        MyAppLabel(labelText = "FAVORITES")
+        WatchlistSection(watchlistViewModel)
+        ReferenceSection()
+    }
+
+
+
+
+
 }else{
 
 
@@ -283,9 +359,11 @@ fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
     val stocksListState = portfolioViewModel.stocksState
 
 
-    StockCardList(stocksListState, withDismiss = false)
+    //StockCardList(stocksListState, withDismiss = false)
 
 
+    //LongPressHandleReorderableColumnScreen(stocksListState)
+    SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState,withDismiss = false)
 }
 
 
@@ -574,12 +652,19 @@ fun WatchlistSection(watchlistViewModel: WatchlistViewModel) {
 
     val stocksListState = watchlistViewModel.stocksState
 
-
+/*
     StockCardList(
         stocksListState,
         withDismiss = true,
         removeMethod = watchlistViewModel::removeItem
-    )
+    )*/
+
+    //LongPressHandleReorderableColumnScreen(stocksListState)
+    SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState,withDismiss = true,watchlistViewModel::removeItem)
+
+
+
+
 
 }
 
@@ -629,6 +714,80 @@ fun ReferenceSection() {
     }
 }
 
+
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState: StateFlow<List<Stock>>,withDismiss: Boolean,
+                                                     removeMethod: KSuspendFunction1<Stock, Boolean>? = null) {
+
+
+    var list by remember { mutableStateOf(emptyList<Stock>()) }
+
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyColumnState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
+        list = list.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+    }
+
+    LaunchedEffect(stocksListState) {
+        stocksListState.collect { newList ->
+            list = newList
+        }
+    }
+
+    LazyColumn(
+
+        userScrollEnabled = false,
+        state = lazyListState,
+
+        modifier = Modifier.height((list.size*65).dp),
+
+    ) {
+        items(list, key = { it.ticker}) {
+            ReorderableItem(reorderableLazyColumnState, it.ticker) { isDragging ->
+                val interactionSource = remember { MutableInteractionSource() }
+                //val density = androidx.compose.ui.platform.LocalDensity.current
+                Card(
+                    onClick = {},
+                    shape = RectangleShape,
+/* calculate per card height to avoid nesting lazy column exception
+
+                        .onGloballyPositioned { coordinates ->
+                            val heightInPixels = coordinates.size.height
+                            val heightInDp: Dp = with(density) { heightInPixels.toDp() }
+                            println("Component height: $heightInDp")
+                        }*/
+                    interactionSource = interactionSource,
+                ) {
+                    Surface(modifier =  Modifier.longPressDraggableHandle(
+                        onDragStarted = {
+
+                        },
+                        onDragStopped = {
+
+                        },
+                        interactionSource = interactionSource,
+                    )){
+
+                        if (withDismiss && removeMethod != null) {
+                            StockCardWithDismiss(it, onRemove = removeMethod)
+                        } else {
+
+                            StockCard(it)
+                        }
+
+                    }
+
+                }
+                Divider()
+            }}
+    }
+}
+
+
+
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
@@ -638,16 +797,3 @@ fun GreetingPreview() {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun test() {
-    StockSearchTheme {
-        CircularProgressIndicator(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            color = Color(0xFF512DA8),
-        )
-    }
-
-}

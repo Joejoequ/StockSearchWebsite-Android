@@ -2,6 +2,7 @@ package com.example.stocksearch
 
 import DataService
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +48,7 @@ class PortfolioViewModel(): ViewModel() {
 
 
     fun fetchData() {
-
+try{
         DataService.fetchPortfolioDataFromAPI(
             callback = { response ->
                 val stockList = mutableListOf<Stock>()
@@ -90,7 +91,10 @@ class PortfolioViewModel(): ViewModel() {
             errorCallback = { error ->
 
             }
-        )
+        )}
+catch (e:Exception){
+    e.message?.let { Log.d("Error", it) }
+}
 
     }
 
