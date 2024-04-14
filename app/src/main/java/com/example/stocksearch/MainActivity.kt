@@ -3,7 +3,6 @@ package com.example.stocksearch
 import DataService
 
 import android.os.Bundle
-import android.util.Log
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -64,6 +63,7 @@ import androidx.compose.runtime.*
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -83,50 +83,43 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.KSuspendFunction1
 
 
-
-
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.interaction.MutableInteractionSource
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.AddCircle
 
 import androidx.compose.material3.Card
+import androidx.compose.material3.TextFieldDefaults.textFieldColors
 
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 
-import androidx.compose.ui.unit.dp
-import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyColumnState
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,6 +141,7 @@ object GlobalValues {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent() {
 
@@ -184,6 +178,7 @@ fun MainContent() {
     Scaffold(
         topBar = {
             MyAppTopBar()
+
         },
     ) { innerPadding ->
         Surface(
@@ -196,71 +191,38 @@ fun MainContent() {
 
 
             val watchlistLoaded by remember { DataService.watchlistLoaded }
-
             val portofolioLoaded by remember { DataService.portofolioLoaded }
-if (watchlistLoaded&&portofolioLoaded){
-/*
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-
-        item {
-            TimeSection()
-        }
+            if (watchlistLoaded && portofolioLoaded) {
 
 
-        item {
-            MyAppLabel(labelText = "PORTFOLIO")
-        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    TimeSection()
+                    MyAppLabel(labelText = "PORTFOLIO")
+                    PortfolioSection(portfolioViewModel)
+                    MyAppLabel(labelText = "FAVORITES")
+                    WatchlistSection(watchlistViewModel)
+                    ReferenceSection()
+                }
 
 
-        item {
-            PortfolioSection(portfolioViewModel)
-        }
+            } else {
 
 
-        item {
-            MyAppLabel(labelText = "FAVORITES")
-        }
-
-
-        item {
-            WatchlistSection(watchlistViewModel)
-        }
-
-
-        item {
-            ReferenceSection()
-        }
-    }*/
-
-    Column (modifier = Modifier
-        .fillMaxHeight()
-        .verticalScroll(rememberScrollState())){
-        TimeSection()
-        MyAppLabel(labelText = "PORTFOLIO")
-        PortfolioSection(portfolioViewModel)
-        MyAppLabel(labelText = "FAVORITES")
-        WatchlistSection(watchlistViewModel)
-        ReferenceSection()
-    }
-
-
-
-
-
-}else{
-
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier,
-            color = Color(0xFF512DA8),
-        )
-    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier,
+                        color = Color(0xFF512DA8),
+                    )
+                }
             }
         }
     }
@@ -271,24 +233,48 @@ if (watchlistLoaded&&portofolioLoaded){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAppTopBar(
-    showCloseBtn: Boolean = true,
-    showSearchBtn: Boolean = true,
-    showBackBtn: Boolean = true,
-    title: String = "Stocks"
+
+
 ) {
+
+
     Surface(shadowElevation = 8.dp) {
+
+
+        var showClearBtn by remember { mutableStateOf(false) }
+        var showSearchBtn by remember { mutableStateOf(true) }
+        var showBackBtn by remember { mutableStateOf(false) }
+        var showTitle by remember { mutableStateOf(true) }
+        var showInput by remember { mutableStateOf(false) }
+
+
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val inputFocusRequester = remember { FocusRequester() }
+
         TopAppBar(
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.White,
                 titleContentColor = Color.Black,
             ),
             title = {
-                Text(title, modifier = Modifier.padding(horizontal = GlobalValues.indentationValue))
+                if (showTitle) {
+                    Text(
+                        "Stocks",
+                        modifier = Modifier.padding(horizontal = GlobalValues.indentationValue)
+                    )
+                }
             },
 
             navigationIcon = {
                 if (showBackBtn) {
-                    IconButton(onClick = {/* Do Something*/ }) {
+                    IconButton(onClick = {
+                        showInput = false
+                        showClearBtn = false
+                        showTitle = true
+                        showSearchBtn = true
+                        showBackBtn = false
+
+                         }) {
                         Icon(Icons.Filled.ArrowBack, null)
                     }
                 }
@@ -298,20 +284,72 @@ fun MyAppTopBar(
 
             actions = {
 
+
+                var searchText by remember { mutableStateOf("") }
+                if (showInput) {
+
+                    LaunchedEffect(Unit){
+
+                        inputFocusRequester.requestFocus()
+                    }
+
+                    TextField(
+
+                        value = searchText,
+                        modifier = Modifier.width(290.dp).focusRequester(inputFocusRequester),
+                        onValueChange = { searchText = it.uppercase()
+                            },
+
+                        singleLine = true,
+
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, keyboardType = KeyboardType.Text),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            //onSearch(searchText)
+                            // You can dismiss the keyboard here if needed
+
+
+                        }
+
+                        ),
+
+
+
+
+                        )
+                }
+
+
                 if (showSearchBtn) {
-                    IconButton(onClick = {/* Do Something*/ }) {
+                    IconButton(onClick = {
+                        showInput = true
+                        showClearBtn = true
+                        showTitle = false
+                        showBackBtn = true
+
+                        showSearchBtn = false
+
+                    }) {
                         Icon(Icons.Filled.Search, null)
                     }
                 }
 
-                if (showCloseBtn) {
-                    IconButton(onClick = {/* Do Something*/ }) {
+                if (showClearBtn) {
+                    IconButton(onClick = { searchText = "" }) {
                         Icon(Icons.Filled.Close, null)
                     }
                 }
 
             }
         )
+
+
     }
 
 }
@@ -323,8 +361,12 @@ fun TimeSection() {
             .fillMaxWidth()
             .padding(horizontal = GlobalValues.indentationValue, vertical = 14.dp)
     ) {
+
+        val currentTime = Calendar.getInstance().time
+        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+
         Text(
-            "21 March 2024", color = Color.Gray,
+            dateFormat.format(currentTime), color = Color.Gray,
             fontSize = 18.sp
         )
     }
@@ -353,7 +395,6 @@ fun MyAppLabel(labelText: String) {
 fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
 
 
-
     PortfolioBalance(portfolioViewModel = portfolioViewModel)
 
     val stocksListState = portfolioViewModel.stocksState
@@ -363,7 +404,7 @@ fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
 
 
     //LongPressHandleReorderableColumnScreen(stocksListState)
-    SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState,withDismiss = false)
+    ReorderableStockCardList(stocksListState, withDismiss = false)
 }
 
 
@@ -630,7 +671,7 @@ fun StockCardWithDismiss(
     LaunchedEffect(show) {
         if (!show) {
 
-            val result =onRemove(currentItem)
+            val result = onRemove(currentItem)
 
             if (result) {
                 Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
@@ -649,21 +690,17 @@ fun StockCardWithDismiss(
 fun WatchlistSection(watchlistViewModel: WatchlistViewModel) {
 
 
-
     val stocksListState = watchlistViewModel.stocksState
 
-/*
-    StockCardList(
-        stocksListState,
-        withDismiss = true,
-        removeMethod = watchlistViewModel::removeItem
-    )*/
+    /*
+        StockCardList(
+            stocksListState,
+            withDismiss = true,
+            removeMethod = watchlistViewModel::removeItem
+        )*/
 
     //LongPressHandleReorderableColumnScreen(stocksListState)
-    SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState,withDismiss = true,watchlistViewModel::removeItem)
-
-
-
+    ReorderableStockCardList(stocksListState, withDismiss = true, watchlistViewModel::removeItem)
 
 
 }
@@ -715,11 +752,12 @@ fun ReferenceSection() {
 }
 
 
-
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState: StateFlow<List<Stock>>,withDismiss: Boolean,
-                                                     removeMethod: KSuspendFunction1<Stock, Boolean>? = null) {
+fun ReorderableStockCardList(
+    stocksListState: StateFlow<List<Stock>>, withDismiss: Boolean,
+    removeMethod: KSuspendFunction1<Stock, Boolean>? = null
+) {
 
 
     var list by remember { mutableStateOf(emptyList<Stock>()) }
@@ -742,34 +780,36 @@ fun SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState: StateFlow<
         userScrollEnabled = false,
         state = lazyListState,
 
-        modifier = Modifier.height((list.size*65).dp),
+        modifier = Modifier.height((list.size * 65).dp),
 
-    ) {
-        items(list, key = { it.ticker}) {
+        ) {
+        items(list, key = { it.ticker }) {
             ReorderableItem(reorderableLazyColumnState, it.ticker) { isDragging ->
                 val interactionSource = remember { MutableInteractionSource() }
                 //val density = androidx.compose.ui.platform.LocalDensity.current
                 Card(
                     onClick = {},
                     shape = RectangleShape,
-/* calculate per card height to avoid nesting lazy column exception
+                    /* calculate per card height to avoid nesting lazy column exception
 
-                        .onGloballyPositioned { coordinates ->
-                            val heightInPixels = coordinates.size.height
-                            val heightInDp: Dp = with(density) { heightInPixels.toDp() }
-                            println("Component height: $heightInDp")
-                        }*/
+                                            .onGloballyPositioned { coordinates ->
+                                                val heightInPixels = coordinates.size.height
+                                                val heightInDp: Dp = with(density) { heightInPixels.toDp() }
+                                                println("Component height: $heightInDp")
+                                            }*/
                     interactionSource = interactionSource,
                 ) {
-                    Surface(modifier =  Modifier.longPressDraggableHandle(
-                        onDragStarted = {
+                    Surface(
+                        modifier = Modifier.longPressDraggableHandle(
+                            onDragStarted = {
 
-                        },
-                        onDragStopped = {
+                            },
+                            onDragStopped = {
 
-                        },
-                        interactionSource = interactionSource,
-                    )){
+                            },
+                            interactionSource = interactionSource,
+                        )
+                    ) {
 
                         if (withDismiss && removeMethod != null) {
                             StockCardWithDismiss(it, onRemove = removeMethod)
@@ -782,10 +822,10 @@ fun SimpleLongPressHandleReorderableLazyColumnScreen(stocksListState: StateFlow<
 
                 }
                 Divider()
-            }}
+            }
+        }
     }
 }
-
 
 
 @Preview(showBackground = true)
