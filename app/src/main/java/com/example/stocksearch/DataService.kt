@@ -17,10 +17,10 @@ import kotlin.coroutines.resume
 object DataService {
 
 
-    var watchlistLoaded=mutableStateOf(false)
+
     private lateinit var requestQueue: RequestQueue
     val timeout = 10000
-    var portofolioLoaded= mutableStateOf(false)
+
     fun init(context: Context) {
         requestQueue = Volley.newRequestQueue(context.applicationContext)
     }
@@ -31,7 +31,7 @@ object DataService {
         val request = JsonObjectRequest(Request.Method.GET, url, null,
             { response ->
                 Log.d("Portfolio API Response", response.toString())
-                portofolioLoaded.value=true
+
                 callback(response)
             },
             { error ->
@@ -57,7 +57,7 @@ object DataService {
             { response ->
 
                 Log.d("Watchlist API Response", response.toString())
-                watchlistLoaded.value=true
+
                 callback(response)
             },
             { error ->

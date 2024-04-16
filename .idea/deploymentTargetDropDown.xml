@@ -5,6 +5,12 @@
       <entry key="GreetingPreview">
         <State />
       </entry>
+      <entry key="StockDetailContent">
+        <State />
+      </entry>
+      <entry key="StockDetailContentPreview">
+        <State />
+      </entry>
       <entry key="app">
         <State>
           <targetSelectedWithDropDown>

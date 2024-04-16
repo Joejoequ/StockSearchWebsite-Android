@@ -2,6 +2,7 @@ package com.example.stocksearch
 
 import DataService
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,7 @@ class WatchlistViewModel() : ViewModel() {
     private val _stocksState = MutableStateFlow(emptyList<Stock>())
     val stocksState: StateFlow<List<Stock>> = _stocksState.asStateFlow()
 
-
+    var watchlistFirstLoaded= mutableStateOf(false)
     init {
 
 
@@ -87,6 +88,8 @@ try {
                     stockList.add(stock)
                 }
                 _stocksState.update { stockList }
+
+                watchlistFirstLoaded.value=true
 
             },
             errorCallback = { error ->

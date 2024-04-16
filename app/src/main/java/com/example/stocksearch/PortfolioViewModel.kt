@@ -18,6 +18,8 @@ class PortfolioViewModel(): ViewModel() {
     var portfolioBalanceState = mutableStateOf(0.0)
     var netWorthState = mutableStateOf(0.0)
 
+    var portofolioFirstLoaded= mutableStateOf(false)
+
     var portfolioBalance: Double
 
         get() = portfolioBalanceState.value
@@ -85,7 +87,7 @@ try{
                 _stocksState.update { stockList }
                 portfolioBalance= response.getDouble("balance")
                 netWorth=totalValue+portfolioBalance
-
+                portofolioFirstLoaded.value=true
 
             },
             errorCallback = { error ->

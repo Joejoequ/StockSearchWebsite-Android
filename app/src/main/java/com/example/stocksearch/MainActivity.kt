@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,10 +35,7 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,7 +45,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -95,15 +93,15 @@ object GlobalValues {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun MainContent() {
 
-    val portfolioViewModel: PortfolioViewModel =
+    val portfolioViewModel =
         PortfolioViewModel()
-    val watchlistViewModel: WatchlistViewModel =
+    val watchlistViewModel =
         WatchlistViewModel()
-    val autocompleteViewModel:AutocompleteViewModel =
+    val autocompleteViewModel =
         AutocompleteViewModel()
 
     LaunchedEffect(key1 = Unit) {
@@ -148,8 +146,8 @@ fun MainContent() {
         ) {
 
 
-            val watchlistLoaded by remember { DataService.watchlistLoaded }
-            val portofolioLoaded by remember { DataService.portofolioLoaded }
+            val watchlistLoaded by remember { watchlistViewModel.watchlistFirstLoaded }
+            val portofolioLoaded by remember { portfolioViewModel.portofolioFirstLoaded }
             if (watchlistLoaded && portofolioLoaded) {
 
 
@@ -206,7 +204,7 @@ autocompleteViewModel:AutocompleteViewModel
         var showInput by remember { mutableStateOf(false) }
 
 
-        val keyboardController = LocalSoftwareKeyboardController.current
+
         val inputFocusRequester = remember { FocusRequester() }
 
         TopAppBar(
@@ -233,7 +231,7 @@ autocompleteViewModel:AutocompleteViewModel
                         showBackBtn = false
 
                     }) {
-                        Icon(Icons.Filled.ArrowBack, null)
+                        Icon(painter = painterResource(id = R.drawable.ic_action_back), null)
                     }
                 }
 
@@ -311,12 +309,13 @@ autocompleteViewModel:AutocompleteViewModel
                         snapshotFlow { textInput }
                             .distinctUntilChanged()
                             .collectLatest { newString ->
-                                delay(1000)
+                                delay(500)
                                 //if user not changing
                                 if (newString == textInput) {
 
                                     menuShouldExpand = true
                                 }
+
                             }
                     }
 
@@ -325,9 +324,11 @@ autocompleteViewModel:AutocompleteViewModel
 
 
                         DropdownMenu(
-                            expanded = menuShouldExpand && textInput!=""&& autocompleteResultMap.containsKey(textInput),
+                            expanded = menuShouldExpand && textInput!=""&& autocompleteResultMap.containsKey(textInput)&& autocompleteResultMap[textInput]!!.isNotEmpty(),
                             onDismissRequest = {menuShouldExpand=false },
-                            modifier = Modifier.width(290.dp).heightIn(max=350.dp)
+                            modifier = Modifier
+                                .width(290.dp)
+                                .heightIn(max = 350.dp)
 
                         ) {
 
@@ -357,13 +358,13 @@ autocompleteViewModel:AutocompleteViewModel
                         showSearchBtn = false
 
                     }) {
-                        Icon(Icons.Filled.Search, null)
+                        Icon(painterResource(id = R.drawable.search), null)
                     }
                 }
 
                 if (showClearBtn) {
                     IconButton(onClick = { textInput="" }) {
-                        Icon(Icons.Filled.Close, null)
+                        Icon(painterResource(id = R.drawable.ic_action_close), null)
                     }
                 }
 
@@ -595,7 +596,7 @@ fun StockCard(singleStock: Stock) {
 @Composable
 fun DismissBackground(dismissState: DismissState) {
     val color = Color(0xFFFF1744)
-    val direction = dismissState.dismissDirection
+
 
     Row(
         modifier = Modifier
@@ -759,7 +760,7 @@ fun ReorderableStockCardList(
             list = newList
         }
     }
-
+    val mContext = LocalContext.current
     LazyColumn(
 
         userScrollEnabled = false,
@@ -768,12 +769,22 @@ fun ReorderableStockCardList(
         modifier = Modifier.height((list.size * 65).dp),
 
         ) {
+
+
         items(list, key = { it.ticker }) {
-            ReorderableItem(reorderableLazyColumnState, it.ticker) { isDragging ->
+            ReorderableItem(reorderableLazyColumnState, it.ticker)
+
+            { isDragging ->
                 val interactionSource = remember { MutableInteractionSource() }
                 //val density = androidx.compose.ui.platform.LocalDensity.current
                 Card(
-                    onClick = {},
+                    onClick = {
+
+                        val intent = Intent(mContext, StockDetailActivity::class.java)
+                        intent.putExtra("SearchTicker", it.ticker)
+
+                        mContext.startActivity(intent)
+                    },
                     shape = RectangleShape,
                     /* calculate per card height to avoid nesting lazy column exception
 
