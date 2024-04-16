@@ -1,7 +1,7 @@
 package com.example.stocksearch
 
 import DataService
-import android.content.Context
+
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.json.JSONObject
+
 
 class PortfolioViewModel(): ViewModel() {
 

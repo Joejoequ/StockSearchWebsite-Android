@@ -90,112 +90,39 @@ object DataService {
                 errorCallback("Error: ${error.message}")
             })
 
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
         requestQueue.add(request)
 
     }
-/*
-    suspend fun o_fetchPortfolioDataFromAPI(): JSONObject? {
 
 
+    fun fetchAutocompleteDataFromAPI(stockSymbol: String, callback: (JSONArray) -> Unit,errorCallback: (String) -> Unit) {
+        val url ="https://cs571a3-418806.uc.r.appspot.com/api/autocomplete?symbol=$stockSymbol"
+        val request = JsonArrayRequest(Request.Method.GET, url, null,
+            { response ->
 
-            val url ="https://cs571a3-418806.uc.r.appspot.com/api/portfolio?userid=" + UserService.getUserId()
+                Log.d("Autocomplete API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("Autocomplete API Response","Error")
+                errorCallback("Error: ${error.message}")
+            })
 
-            val response = kotlin.coroutines.suspendCoroutine<JSONObject?> { continuation ->
-                val jsonObjectRequest = JsonObjectRequest(Request.Method.GET, url, null,
-                    { response ->
+        request.retryPolicy = DefaultRetryPolicy(
+            4000,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
 
-                        continuation.resume(response)
-                    },
-                    { error ->
-
-                        Log.e("Volley Error", error.toString())
-                        continuation.resume(null)
-                    })
-
-                this.requestQueue.add(jsonObjectRequest)
-            }
-
-
-
-
-            if (response != null) {
-                Log.d("Portfolio API Response", response.toString())
-                return  response
-            } else {
-                Log.d("Portfolio API Response", "NULL")
-                return null
-            }
-        }
-    }
-
-
-    suspend fun o_fetchWatchlistDataFromAPI(): JSONArray? {
-
-        Log.d("volley","watchlist attempt to fetch")
-
-            val url =
-                "https://cs571a3-418806.uc.r.appspot.com/api/watchlist?userid=" + UserService.getUserId()
-
-            val response = kotlin.coroutines.suspendCoroutine<JSONArray?> { continuation ->
-                val jsonRequest = JsonArrayRequest(Request.Method.GET, url, null,
-                    { response ->
-
-                        continuation.resume(response)
-                    },
-                    { error ->
-
-                        Log.e("Volley Error", error.toString())
-                        continuation.resume(null)
-                    })
-
-                //requestQueue.add(jsonRequest)
-            }
-
-
-
-
-            if (response != null) {
-                Log.d("Watchlist API Response", response.toString())
-                return response
-            } else {
-                Log.d("Watchlist API Response", "NULL")
-                return null
-            }
+        requestQueue.add(request)
 
     }
 
-
-    suspend fun o_sendWatchlistRemoveRequest(stockSymbol: String): JSONObject? {
-
-
-
-            val url =
-                "https://cs571a3-418806.uc.r.appspot.com/api/watchlis/${UserService.getUserId()}/$stockSymbol"
-
-            val response = kotlin.coroutines.suspendCoroutine<JSONObject?> { continuation ->
-                val jsonRequest = JsonObjectRequest(Request.Method.DELETE, url, null,
-                    { response ->
-
-                        continuation.resume(response)
-                    },
-                    { error ->
-
-                        Log.e("Volley Error", error.toString())
-                        continuation.resume(null)
-                    })
-
-                //requestQueue.add(jsonRequest)
-            }
-
-            if (response != null) {
-                Log.d("Watchlist Remove API Response", response.toString())
-                 return response
-            } else {
-                Log.d("Watchlist Remove API Response", "NULL")
-                return  null
-            }
-
-    }
-*/
 
 }

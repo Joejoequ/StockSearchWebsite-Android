@@ -23,11 +23,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
@@ -60,11 +60,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
 import com.example.stocksearch.ui.theme.StockSearchTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyColumnState
@@ -100,6 +101,11 @@ fun MainContent() {
 
     val portfolioViewModel: PortfolioViewModel =
         PortfolioViewModel()
+    val watchlistViewModel: WatchlistViewModel =
+        WatchlistViewModel()
+    val autocompleteViewModel:AutocompleteViewModel =
+        AutocompleteViewModel()
+
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
@@ -113,8 +119,7 @@ fun MainContent() {
     }
 
 
-    val watchlistViewModel: WatchlistViewModel =
-        WatchlistViewModel()
+
     LaunchedEffect(key1 = Unit) {
         while (true) {
 
@@ -130,7 +135,7 @@ fun MainContent() {
 
     Scaffold(
         topBar = {
-            MyAppTopBar()
+            MyAppTopBar(autocompleteViewModel)
 
         },
     ) { innerPadding ->
@@ -186,7 +191,7 @@ fun MainContent() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAppTopBar(
-
+autocompleteViewModel:AutocompleteViewModel
 
 ) {
 
@@ -227,7 +232,7 @@ fun MyAppTopBar(
                         showSearchBtn = true
                         showBackBtn = false
 
-                         }) {
+                    }) {
                         Icon(Icons.Filled.ArrowBack, null)
                     }
                 }
@@ -238,52 +243,107 @@ fun MyAppTopBar(
             actions = {
 
                 val mContext = LocalContext.current
-                var searchText by remember { mutableStateOf("") }
+                var textInput by remember { mutableStateOf("") }
+
+                var menuShouldExpand by remember { mutableStateOf(false) }
                 if (showInput) {
 
-                    LaunchedEffect(Unit){
+                    LaunchedEffect(!menuShouldExpand) {
 
                         inputFocusRequester.requestFocus()
                     }
 
-                    TextField(
 
-                        value = searchText,
-                        modifier = Modifier
-                            .width(290.dp)
-                            .focusRequester(inputFocusRequester),
-                        onValueChange = { searchText = it.uppercase()
+
+                        TextField(
+
+                            value = textInput,
+                            modifier = Modifier
+                                .width(290.dp)
+                                .focusRequester(inputFocusRequester),
+
+                            onValueChange = { newValue ->
+
+
+
+                                if (newValue != textInput) {
+
+                                    textInput = newValue.uppercase()
+
+                                    autocompleteViewModel.fetchData(textInput)
+
+
+                                }
+
                             },
 
-                        singleLine = true,
+                            singleLine = true,
 
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, keyboardType = KeyboardType.Text),
-                        keyboardActions = KeyboardActions(onSearch = {
-
-
-
-                           val intent=Intent( mContext,StockDetailActivity::class.java)
-                            intent.putExtra("SearchTicker", searchText)
-
-                            mContext.startActivity(intent)
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Search,
+                                keyboardType = KeyboardType.Text
+                            ),
+                            keyboardActions = KeyboardActions(onSearch = {
 
 
+                                val intent = Intent(mContext, StockDetailActivity::class.java)
+                                intent.putExtra("SearchTicker", textInput)
 
+                                mContext.startActivity(intent)
+
+
+                            }
+
+                            ),
+
+
+                            )
+
+
+                    LaunchedEffect(textInput) {
+                        snapshotFlow { textInput }
+                            .distinctUntilChanged()
+                            .collectLatest { newString ->
+                                delay(1000)
+                                //if user not changing
+                                if (newString == textInput) {
+
+                                    menuShouldExpand = true
+                                }
+                            }
+                    }
+
+                       val autocompleteResultMap by autocompleteViewModel.autocompleteResultMap.collectAsState()
+
+
+
+                        DropdownMenu(
+                            expanded = menuShouldExpand && textInput!=""&& autocompleteResultMap.containsKey(textInput),
+                            onDismissRequest = {menuShouldExpand=false },
+                            modifier = Modifier.width(290.dp).heightIn(max=350.dp)
+
+                        ) {
+
+
+                            autocompleteResultMap[textInput]?.forEach { item ->
+                                DropdownMenuItem(text = { Text(text = item.ticker+" | "+item.name) }, onClick = {
+                                    textInput=item.ticker
+
+                                    menuShouldExpand = false
+
+                                })
+                            }
                         }
 
-                        ),
 
 
-
-
-                        )
                 }
 
 
@@ -302,7 +362,7 @@ fun MyAppTopBar(
                 }
 
                 if (showClearBtn) {
-                    IconButton(onClick = { searchText = "" }) {
+                    IconButton(onClick = { textInput="" }) {
                         Icon(Icons.Filled.Close, null)
                     }
                 }
@@ -361,10 +421,7 @@ fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
     val stocksListState = portfolioViewModel.stocksState
 
 
-    //StockCardList(stocksListState, withDismiss = false)
 
-
-    //LongPressHandleReorderableColumnScreen(stocksListState)
     ReorderableStockCardList(stocksListState, withDismiss = false)
 }
 
@@ -423,33 +480,7 @@ fun PortfolioBalance(portfolioViewModel: PortfolioViewModel) {
 }
 
 
-@Composable
-fun StockCardList(
-    stocksListState: StateFlow<List<Stock>>, withDismiss: Boolean,
-    removeMethod: KSuspendFunction1<Stock, Boolean>? = null
-) {
 
-    val stocksList by stocksListState.collectAsState()
-    LazyColumn {
-
-        itemsIndexed(
-            items = stocksList,
-            // Provide a unique key based on the email content
-            key = { _, item -> item.hashCode() }
-        ) { _, stock ->
-
-            if (withDismiss && removeMethod != null) {
-                StockCardWithDismiss(stock, onRemove = removeMethod)
-            } else {
-
-                StockCard(stock)
-            }
-            Divider()
-        }
-    }
-
-
-}
 
 
 @Composable
@@ -653,14 +684,7 @@ fun WatchlistSection(watchlistViewModel: WatchlistViewModel) {
 
     val stocksListState = watchlistViewModel.stocksState
 
-    /*
-        StockCardList(
-            stocksListState,
-            withDismiss = true,
-            removeMethod = watchlistViewModel::removeItem
-        )*/
 
-    //LongPressHandleReorderableColumnScreen(stocksListState)
     ReorderableStockCardList(stocksListState, withDismiss = true, watchlistViewModel::removeItem)
 
 
