@@ -125,4 +125,54 @@ object DataService {
     }
 
 
+
+    fun fetchProfileDataFromAPI(stockSymbol: String, callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
+        val url ="https://cs571a3-418806.uc.r.appspot.com/api/profile?symbol=$stockSymbol"
+        val request = JsonObjectRequest(Request.Method.GET, url, null,
+            { response ->
+
+                Log.d("Profile API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("Profile API Response","Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
+
+    fun fetchQuoteDataFromAPI(stockSymbol: String, callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
+        val url ="https://cs571a3-418806.uc.r.appspot.com/api/quote?symbol=$stockSymbol"
+        val request = JsonObjectRequest(Request.Method.GET, url, null,
+            { response ->
+
+                Log.d("Quote API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("Quote API Response","Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
 }

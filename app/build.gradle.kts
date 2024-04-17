@@ -61,6 +61,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.volley)
     implementation("sh.calvin.reorderable:reorderable:1.5.0")
+    implementation ("com.github.bumptech.glide:compose:1.0.0-beta01")
+    implementation(libs.androidx.swiperefreshlayout)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
