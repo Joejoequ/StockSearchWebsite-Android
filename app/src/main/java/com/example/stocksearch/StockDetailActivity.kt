@@ -3,6 +3,9 @@ package com.example.stocksearch
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -51,6 +55,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.res.ResourcesCompat
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.example.stocksearch.ui.theme.StockSearchTheme
 
@@ -113,8 +119,11 @@ class StockDetailActivity : ComponentActivity() {
                             .fillMaxHeight()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        //
+
                         StockProfileCard(stockDetailViewModel)
+
+
+                        yearChartFromHTML()
                     }
 
 
@@ -303,6 +312,36 @@ class StockDetailActivity : ComponentActivity() {
 
     }
 
+
+
+    @Composable
+    fun yearChartFromHTML() {
+        var webView = WebView(LocalContext.current)
+
+       webView.apply {
+            settings.javaScriptEnabled = true
+            webChromeClient = WebChromeClient()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    val javascriptCode = "loadChart('$searchedStock');"
+                    webView.evaluateJavascript(javascriptCode, null)
+                }
+            }
+            webView = this
+        }
+
+
+        webView.loadUrl("file:///android_asset/yearChart.html")
+
+
+
+
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { webView }
+        )
+    }
 
     @Preview(showBackground = true)
     @Composable
