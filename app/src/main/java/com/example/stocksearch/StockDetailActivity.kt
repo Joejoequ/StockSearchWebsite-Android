@@ -1,14 +1,15 @@
 package com.example.stocksearch
 
 
-import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,15 +26,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 
 import androidx.compose.material3.TopAppBar
@@ -42,29 +50,34 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.res.ResourcesCompat
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.example.stocksearch.ui.theme.StockSearchTheme
 
 
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.Placeholder
 import com.bumptech.glide.integration.compose.placeholder
+import com.example.stocksearch.ui.theme.Purple40
+import com.example.stocksearch.ui.theme.Purple80
 
 class StockDetailActivity : ComponentActivity() {
     var searchedStock: String = ""
@@ -123,7 +136,8 @@ class StockDetailActivity : ComponentActivity() {
                         StockProfileCard(stockDetailViewModel)
 
 
-                        yearChartFromHTML()
+
+                        TabLayout()
                     }
 
 
@@ -314,34 +328,115 @@ class StockDetailActivity : ComponentActivity() {
 
 
 
-    @Composable
-    fun yearChartFromHTML() {
-        var webView = WebView(LocalContext.current)
 
-       webView.apply {
+
+
+
+
+
+    @Composable
+    fun TabLayout() {
+
+
+        var webView1 = WebView(LocalContext.current)
+
+        webView1.apply {
+            settings.javaScriptEnabled = true
+            webChromeClient = WebChromeClient()
+            webViewClient =  object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+
+                    view?.evaluateJavascript("loadHourChart('$searchedStock');", null)
+                }
+            }
+            webView1 = this
+        }
+
+        webView1.loadUrl("file:///android_asset/hourChart.html")
+
+
+
+        var webView2 = WebView(LocalContext.current)
+
+        webView2.apply {
             settings.javaScriptEnabled = true
             webChromeClient = WebChromeClient()
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    val javascriptCode = "loadChart('$searchedStock');"
-                    webView.evaluateJavascript(javascriptCode, null)
+
+                   view?.evaluateJavascript("loadYearChart('$searchedStock');", null)
                 }
             }
-            webView = this
+            webView2 = this
         }
 
 
-        webView.loadUrl("file:///android_asset/yearChart.html")
+        webView2.loadUrl("file:///android_asset/yearChart.html")
 
 
 
 
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { webView }
-        )
+
+        var tabIndex by remember { mutableStateOf(0) }
+
+        val tabs = listOf("hour","year")
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+
+
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { webView1 }
+                ) {
+                    if (tabIndex == 0) {
+                        it.visibility = android.view.View.VISIBLE
+                    } else {
+                        it.visibility = android.view.View.GONE
+                    }
+                }
+
+
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { webView2 }
+            ) {
+                if (tabIndex == 1) {
+                    it.visibility = android.view.View.VISIBLE
+                } else {
+                    it.visibility = android.view.View.GONE
+                }
+            }
+
+
+
+
+
+            TabRow(selectedTabIndex = tabIndex , indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier=Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
+                    color =  colorResource(id = R.color.purple_700)
+                )},contentColor =  colorResource(id = R.color.purple_700)) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+
+                        selected = tabIndex == index,
+                        onClick = { tabIndex = index },
+                        icon = {
+                            when (index) {
+                                0 -> Icon(imageVector =ImageVector.vectorResource(id = R.drawable.chart_hour), contentDescription = null)
+                                1 -> Icon(imageVector = ImageVector.vectorResource(id = R.drawable.chart_historical), contentDescription = null)
+
+                            }
+                        }
+                    )
+                }
+            }
+
+        }
     }
+
 
     @Preview(showBackground = true)
     @Composable
