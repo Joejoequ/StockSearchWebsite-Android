@@ -2,14 +2,12 @@ package com.example.stocksearch
 
 
 import android.os.Bundle
-import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,16 +24,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Settings
 
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -76,8 +70,6 @@ import com.example.stocksearch.ui.theme.StockSearchTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
-import com.example.stocksearch.ui.theme.Purple40
-import com.example.stocksearch.ui.theme.Purple80
 
 class StockDetailActivity : ComponentActivity() {
     var searchedStock: String = ""
@@ -134,10 +126,9 @@ class StockDetailActivity : ComponentActivity() {
                     ) {
 
                         StockProfileCard(stockDetailViewModel)
+                        PriceChartTab()
 
 
-
-                        TabLayout()
                     }
 
 
@@ -327,27 +318,26 @@ class StockDetailActivity : ComponentActivity() {
     }
 
 
-
-
-
-
-
-
-
     @Composable
-    fun TabLayout() {
+    fun PriceChartTab() {
+
+        var context = LocalContext.current
+        var webView1 = WebView(context)
 
 
-        var webView1 = WebView(LocalContext.current)
-
+        var hourChartLoaded by remember { mutableStateOf(false) }
+        var yearChartLoaded by remember { mutableStateOf(false) }
         webView1.apply {
             settings.javaScriptEnabled = true
             webChromeClient = WebChromeClient()
-            webViewClient =  object : WebViewClient() {
+            webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    if (!hourChartLoaded) {
+                        view?.evaluateJavascript("loadHourChart('$searchedStock');", null)
 
-                    view?.evaluateJavascript("loadHourChart('$searchedStock');", null)
+                        hourChartLoaded = true
+                    }
                 }
             }
             webView1 = this
@@ -356,8 +346,7 @@ class StockDetailActivity : ComponentActivity() {
         webView1.loadUrl("file:///android_asset/hourChart.html")
 
 
-
-        var webView2 = WebView(LocalContext.current)
+        var webView2 = WebView(context)
 
         webView2.apply {
             settings.javaScriptEnabled = true
@@ -365,8 +354,11 @@ class StockDetailActivity : ComponentActivity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    if (!yearChartLoaded) {
+                        view?.evaluateJavascript("loadYearChart('$searchedStock');", null)
+                        yearChartLoaded = true
+                    }
 
-                   view?.evaluateJavascript("loadYearChart('$searchedStock');", null)
                 }
             }
             webView2 = this
@@ -376,26 +368,26 @@ class StockDetailActivity : ComponentActivity() {
         webView2.loadUrl("file:///android_asset/yearChart.html")
 
 
-
-
-
         var tabIndex by remember { mutableStateOf(0) }
 
-        val tabs = listOf("hour","year")
+        val tabs = listOf("hour", "year")
 
         Column(modifier = Modifier.fillMaxWidth()) {
 
 
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { webView1 }
-                ) {
-                    if (tabIndex == 0) {
-                        it.visibility = android.view.View.VISIBLE
-                    } else {
-                        it.visibility = android.view.View.GONE
-                    }
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = {
+
+                    webView1
                 }
+            ) {
+                if (tabIndex == 0) {
+                    it.visibility = android.view.View.VISIBLE
+                } else {
+                    it.visibility = android.view.View.GONE
+                }
+            }
 
 
             AndroidView(
@@ -413,11 +405,12 @@ class StockDetailActivity : ComponentActivity() {
 
 
 
-            TabRow(selectedTabIndex = tabIndex , indicator = { tabPositions ->
+            TabRow(selectedTabIndex = tabIndex, indicator = { tabPositions ->
                 TabRowDefaults.Indicator(
-                    modifier=Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
-                    color =  colorResource(id = R.color.purple_700)
-                )},contentColor =  colorResource(id = R.color.purple_700)) {
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
+                    color = colorResource(id = R.color.purple_700)
+                )
+            }, contentColor = colorResource(id = R.color.purple_700)) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
 
@@ -425,8 +418,15 @@ class StockDetailActivity : ComponentActivity() {
                         onClick = { tabIndex = index },
                         icon = {
                             when (index) {
-                                0 -> Icon(imageVector =ImageVector.vectorResource(id = R.drawable.chart_hour), contentDescription = null)
-                                1 -> Icon(imageVector = ImageVector.vectorResource(id = R.drawable.chart_historical), contentDescription = null)
+                                0 -> Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_hour),
+                                    contentDescription = null
+                                )
+
+                                1 -> Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_historical),
+                                    contentDescription = null
+                                )
 
                             }
                         }
@@ -435,6 +435,11 @@ class StockDetailActivity : ComponentActivity() {
             }
 
         }
+    }
+
+    @Composable
+    fun PortfolioSection() {
+
     }
 
 
