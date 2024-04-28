@@ -1,35 +1,53 @@
 package com.example.stocksearch
 
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
+
+
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyRow
 
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 
 import androidx.compose.material3.CircularProgressIndicator
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -54,10 +72,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.colorResource
 
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -128,6 +154,16 @@ class StockDetailActivity : ComponentActivity() {
                         StockProfileCard(stockDetailViewModel)
                         PriceChartTab()
 
+                        SectionLabel(title = "Portfolio")
+                        PortfolioSection()
+                        SectionLabel(title = "Stats")
+                        StatsSection()
+                        SectionLabel(title = "About")
+                        AboutSection()
+                        SectionLabel(title = "Insights")
+                        InsightSection()
+                        SectionLabel(title = "News")
+
 
                     }
 
@@ -149,6 +185,76 @@ class StockDetailActivity : ComponentActivity() {
                 }
             }
         }
+
+    }
+
+    @Composable
+    fun SectionLabel(title: String) {
+        Text(modifier = Modifier.padding(top = 20.dp, start = 10.dp), text = title)
+    }
+
+    @Composable
+    fun InsightSection() {
+
+        val profileData by stockDetailViewModel.profileData.collectAsState()
+        val insiderData by stockDetailViewModel.insiderData.collectAsState()
+Surface (modifier = Modifier.fillMaxWidth()){
+    Text(
+        text = "Social Sentiments",
+        fontSize = 19.sp,
+        textAlign = TextAlign.Center
+    )
+}
+
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp),
+
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+//1st row
+        Row(Modifier.fillMaxWidth() ) {
+            Text(profileData.getString("name"), modifier = Modifier.weight(5f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text("MSRP", modifier = Modifier.weight(4f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text("Change", modifier = Modifier.weight(6f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+        }
+        Spacer(modifier = Modifier.height(1.dp))
+
+        // 2nd row
+        Row(Modifier.fillMaxWidth()) {
+            Text("Total", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("totalMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("totalChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+        }
+        Spacer(modifier = Modifier.height(1.dp))
+
+        // 3rd row
+        Row(Modifier.fillMaxWidth()) {
+            Text("Positive", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("positiveMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("positiveChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+        }
+        Spacer(modifier = Modifier.height(1.dp))
+
+        // 4th row
+        Row(Modifier.fillMaxWidth()) {
+            Text("Negative", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("negativeMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("negativeChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+        }
+    }
+
+
+
+
 
     }
 
@@ -439,9 +545,195 @@ class StockDetailActivity : ComponentActivity() {
 
     @Composable
     fun PortfolioSection() {
+        val portfolioData by stockDetailViewModel.portfolioData.collectAsState()
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+
+            Row(
+                modifier = Modifier.padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+
+                    Text(text = "Shares Owned:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Avg. Cost/Share:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Total Cost:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Change:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Market Value:")
+                }
+                Column(modifier = Modifier.padding(start = 15.dp)) {
+
+                    Text(text = portfolioData.getInt("quantity").toString())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("avgCost")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("totalCost")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("change")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("marketValue")))
+                }
+            }
+
+            Button(
+                onClick = { /*TODO*/ },
+                modifier = Modifier.padding(end = 20.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0FA128),
+                    contentColor = Color(0xFFFFFFFF)
+                )
+            ) {
+                Text("Trade")
+            }
+        }
 
     }
 
+    @Composable
+    fun StatsSection() {
+        val quoteData by stockDetailViewModel.quoteData.collectAsState()
+
+        Row(modifier = Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.weight(1f)) {
+                Column {
+                    Text("Open Price:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Low Price:")
+                }
+
+                Column {
+                    Text(text = String.format("%.2f", quoteData.getDouble("o")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", quoteData.getDouble("l")))
+
+                }
+            }
+            Row(modifier = Modifier.weight(1f)) {
+                Column {
+                    Text("High Price:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Prev. Close:")
+                }
+                Column {
+                    Text(text = String.format("%.2f", quoteData.getDouble("h")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", quoteData.getDouble("pc")))
+                }
+
+            }
+        }
+    }
+
+    @Composable
+    fun AboutSection() {
+
+        val profileData by stockDetailViewModel.profileData.collectAsState()
+
+        val peerData by stockDetailViewModel.peerData.collectAsState()
+        val peerList = mutableListOf<String>()
+        for (i in 0 until peerData.length()) {
+            peerList.add(peerData.getString(i))
+        }
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)) {
+            Column {
+                Text(text = "IPO Start Date")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "Industry")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "Webpage")
+
+
+            }
+            Column(modifier = Modifier.padding(start = 20.dp)) {
+                Text(text = profileData.getString("ipo"))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text =  profileData.getString("finnhubIndustry"))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                HyperLink(linkText = profileData.getString("weburl"), link =profileData.getString("weburl"),true)
+
+
+
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)){
+            Text(text = "Company Peers")
+
+            LazyRow (modifier = Modifier.padding(start =8.dp, top = 3.dp)){
+                items(count = peerList.size) { index ->
+
+                    HyperLink(linkText = peerList[index], link =peerList[index],false)
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                }
+            }
+
+        }
+    }
+
+@Composable
+fun HyperLink(linkText:String,link:String,url:Boolean){
+    val mContext = LocalContext.current
+    val text = AnnotatedString.Builder().apply {
+        withStyle(
+            style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)
+        ) {
+            append(linkText)
+            addStringAnnotation(
+                tag = "URL",
+                annotation = link,
+                start = 0,
+                end = length
+            )
+        }
+    }.toAnnotatedString()
+    val uriHandler = LocalUriHandler.current
+    ClickableText(text = text,style = TextStyle(
+
+        fontSize = 16.sp
+    ), onClick = { offset ->
+
+
+        if (url){
+            val url = text.getStringAnnotations("URL", offset, offset)
+                .firstOrNull()?.item
+
+
+            if (url != null) {
+                uriHandler.openUri(url)
+            }}
+
+        else{
+
+            val intent = Intent(mContext, StockDetailActivity::class.java)
+            intent.putExtra("SearchTicker", link)
+
+            mContext.startActivity(intent)
+
+        }
+        }
+
+
+    )
+
+
+}
 
     @Preview(showBackground = true)
     @Composable

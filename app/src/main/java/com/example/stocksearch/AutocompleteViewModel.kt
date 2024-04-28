@@ -1,20 +1,22 @@
 package com.example.stocksearch
+
 import DataService
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class AutocompleteViewModel(): ViewModel() {
+class AutocompleteViewModel() : ViewModel() {
 
 
-    var autocompleteResultMap: MutableStateFlow<HashMap<String,List<Stock>>> = MutableStateFlow(HashMap())
+    var autocompleteResultMap: MutableStateFlow<HashMap<String, List<Stock>>> =
+        MutableStateFlow(HashMap())
 
 
-    fun fetchData(symbolInput:String) {
+    fun fetchData(symbolInput: String) {
         try {
 
             if (autocompleteResultMap.value.containsKey(symbolInput)) {
-                Log.d("Autocomplete","already have result, request not sent")
+                Log.d("Autocomplete", "already have result, request not sent")
             } else {
                 DataService.fetchAutocompleteDataFromAPI(stockSymbol = symbolInput,
                     callback = { response ->
@@ -47,11 +49,11 @@ class AutocompleteViewModel(): ViewModel() {
 
                     }
                 )
-            }}
-            catch(e:Exception) {
-                e.message?.let { Log.d("Error", it) }
             }
+        } catch (e: Exception) {
+            e.message?.let { Log.d("Error", it) }
         }
+    }
 
 
 }

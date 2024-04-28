@@ -16,8 +16,6 @@ import kotlin.coroutines.resume
 
 object DataService {
 
-
-
     private lateinit var requestQueue: RequestQueue
     val timeout = 10000
 
@@ -26,8 +24,9 @@ object DataService {
     }
 
 
-    fun fetchPortfolioDataFromAPI( callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
-        val url ="https://cs571a3-418806.uc.r.appspot.com/api/portfolio?userid=" + UserService.getUserId()
+    fun fetchPortfolioDataFromAPI(callback: (JSONObject) -> Unit, errorCallback: (String) -> Unit) {
+        val url =
+            "https://cs571a3-418806.uc.r.appspot.com/api/portfolio?userid=" + UserService.getUserId()
         val request = JsonObjectRequest(Request.Method.GET, url, null,
             { response ->
                 Log.d("Portfolio API Response", response.toString())
@@ -35,7 +34,7 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Portfolio API Response","Error ${error.message}")
+                Log.d("Portfolio API Response", "Error ${error.message}")
                 errorCallback("Error: ${error.message}")
             })
 
@@ -51,8 +50,10 @@ object DataService {
 
 
 
-    fun fetchWatchlistDataFromAPI( callback: (JSONArray) -> Unit,errorCallback: (String) -> Unit) {
-        val url ="https://cs571a3-418806.uc.r.appspot.com/api/watchlist?userid=" + UserService.getUserId()
+
+    fun fetchWatchlistDataFromAPI(callback: (JSONArray) -> Unit, errorCallback: (String) -> Unit) {
+        val url =
+            "https://cs571a3-418806.uc.r.appspot.com/api/watchlist?userid=" + UserService.getUserId()
         val request = JsonArrayRequest(Request.Method.GET, url, null,
             { response ->
 
@@ -61,7 +62,7 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Watchlist API Response","Error $error")
+                Log.d("Watchlist API Response", "Error $error")
 
                 errorCallback("Error: ${error.message}")
             })
@@ -76,7 +77,11 @@ object DataService {
     }
 
 
-    fun sendWatchlistRemoveRequest(stockSymbol: String, callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
+    fun sendWatchlistRemoveRequest(
+        stockSymbol: String,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
         val url =
             "https://cs571a3-418806.uc.r.appspot.com/api/watchlist/${UserService.getUserId()}/$stockSymbol"
         val request = JsonObjectRequest(Request.Method.DELETE, url, null,
@@ -86,7 +91,7 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Watchlist Remove API Response","Error")
+                Log.d("Watchlist Remove API Response", "Error")
                 errorCallback("Error: ${error.message}")
             })
 
@@ -101,8 +106,12 @@ object DataService {
     }
 
 
-    fun fetchAutocompleteDataFromAPI(stockSymbol: String, callback: (JSONArray) -> Unit,errorCallback: (String) -> Unit) {
-        val url ="https://cs571a3-418806.uc.r.appspot.com/api/autocomplete?symbol=$stockSymbol"
+    fun fetchAutocompleteDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONArray) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/autocomplete?symbol=$stockSymbol"
         val request = JsonArrayRequest(Request.Method.GET, url, null,
             { response ->
 
@@ -110,7 +119,7 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Autocomplete API Response","Error")
+                Log.d("Autocomplete API Response", "Error")
                 errorCallback("Error: ${error.message}")
             })
 
@@ -125,9 +134,12 @@ object DataService {
     }
 
 
-
-    fun fetchProfileDataFromAPI(stockSymbol: String, callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
-        val url ="https://cs571a3-418806.uc.r.appspot.com/api/profile?symbol=$stockSymbol"
+    fun fetchProfileDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/profile?symbol=$stockSymbol"
         val request = JsonObjectRequest(Request.Method.GET, url, null,
             { response ->
 
@@ -135,7 +147,35 @@ object DataService {
                 callback(response)
             },
             { error ->
-                Log.d("Profile API Response","Error")
+                Log.d("Profile API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
+    fun fetchQuoteDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/quote?symbol=$stockSymbol"
+        val request = JsonObjectRequest(Request.Method.GET, url, null,
+            { response ->
+
+                Log.d("Quote API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("Quote API Response", "Error")
                 errorCallback("Error: ${error.message}")
             })
 
@@ -151,16 +191,49 @@ object DataService {
 
 
 
-    fun fetchQuoteDataFromAPI(stockSymbol: String, callback: (JSONObject) -> Unit,errorCallback: (String) -> Unit) {
-        val url ="https://cs571a3-418806.uc.r.appspot.com/api/quote?symbol=$stockSymbol"
-        val request = JsonObjectRequest(Request.Method.GET, url, null,
+    fun fetchPeerDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONArray) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/peers?symbol=$stockSymbol"
+        val request = JsonArrayRequest(Request.Method.GET, url, null,
             { response ->
 
-                Log.d("Quote API Response", response.toString())
+                Log.d("Peer API Response", response.toString())
                 callback(response)
             },
             { error ->
-                Log.d("Quote API Response","Error")
+                Log.d("Peer API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
+
+    fun fetchInsightDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONArray) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/insider?symbol=$stockSymbol"
+        val request = JsonArrayRequest(Request.Method.GET, url, null,
+            { response ->
+
+                Log.d("Insider API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("Insider API Response", "Error")
                 errorCallback("Error: ${error.message}")
             })
 

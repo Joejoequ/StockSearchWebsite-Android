@@ -11,17 +11,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 
-class PortfolioViewModel(): ViewModel() {
+class PortfolioViewModel() : ViewModel() {
 
     private val _stocksState = MutableStateFlow(emptyList<Stock>())
     val stocksState: StateFlow<List<Stock>> = _stocksState.asStateFlow()
     var portfolioBalanceState = mutableStateOf(0.0)
     var netWorthState = mutableStateOf(0.0)
 
-    var portofolioFirstLoaded= mutableStateOf(false)
+    var portofolioFirstLoaded = mutableStateOf(false)
 
     var portfolioBalance: Double
-
         get() = portfolioBalanceState.value
         set(value) {
             portfolioBalanceState.value = value
@@ -39,69 +38,65 @@ class PortfolioViewModel(): ViewModel() {
         netWorthState = mutableStateOf(netWorth)
 
 
-
-
-
     }
-
-
-
-
 
 
     fun fetchData() {
-try{
-        DataService.fetchPortfolioDataFromAPI(
-            callback = { response ->
-                val stockList = mutableListOf<Stock>()
-                var totalValue=0.0
-                netWorth=0.0
-                val stocksArray = response.getJSONArray("stocks")
+        try {
+            DataService.fetchPortfolioDataFromAPI(
+                callback = { response ->
+                    val stockList = mutableListOf<Stock>()
+                    var totalValue = 0.0
+                    netWorth = 0.0
+                    val stocksArray = response.getJSONArray("stocks")
 
-                for (i in 0 until stocksArray.length()) {
-                    val stockObject = stocksArray.getJSONObject(i)
-
-
-                    val ticker = stockObject.getString("ticker")
-
-                    val quantity=stockObject.getInt("quantity")
-                    val cost=stockObject.getDouble("cost")
-                    val price = stockObject.getDouble("price")
+                    for (i in 0 until stocksArray.length()) {
+                        val stockObject = stocksArray.getJSONObject(i)
 
 
-                    val avgCost=cost/quantity
-                    val currentValue=quantity*price
+                        val ticker = stockObject.getString("ticker")
 
-                    val totalChange=(price-avgCost)*quantity
-
-                    val percentChange=(totalChange/cost)*100
-
-                    val stock = Stock(ticker, "$quantity shares", currentValue,totalChange,percentChange)
-                    stockList.add(stock)
+                        val quantity = stockObject.getInt("quantity")
+                        val cost = stockObject.getDouble("cost")
+                        val price = stockObject.getDouble("price")
 
 
-                    totalValue+=currentValue
+                        val avgCost = cost / quantity
+                        val currentValue = quantity * price
+
+                        val totalChange = (price - avgCost) * quantity
+
+                        val percentChange = (totalChange / cost) * 100
+
+                        val stock = Stock(
+                            ticker,
+                            "$quantity shares",
+                            currentValue,
+                            totalChange,
+                            percentChange
+                        )
+                        stockList.add(stock)
+
+
+                        totalValue += currentValue
+                    }
+
+
+                    _stocksState.update { stockList }
+                    portfolioBalance = response.getDouble("balance")
+                    netWorth = totalValue + portfolioBalance
+                    portofolioFirstLoaded.value = true
+
+                },
+                errorCallback = { error ->
+
                 }
-
-
-                _stocksState.update { stockList }
-                portfolioBalance= response.getDouble("balance")
-                netWorth=totalValue+portfolioBalance
-                portofolioFirstLoaded.value=true
-
-            },
-            errorCallback = { error ->
-
-            }
-        )}
-catch (e:Exception){
-    e.message?.let { Log.d("Error", it) }
-}
+            )
+        } catch (e: Exception) {
+            e.message?.let { Log.d("Error", it) }
+        }
 
     }
-
-
-
 
 
 }

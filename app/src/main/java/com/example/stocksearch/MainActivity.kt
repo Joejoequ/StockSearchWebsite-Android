@@ -74,6 +74,13 @@ import kotlin.reflect.KSuspendFunction1
 
 
 class MainActivity : ComponentActivity() {
+
+    val portfolioViewModel =
+        PortfolioViewModel()
+    val watchlistViewModel =
+        WatchlistViewModel()
+    val autocompleteViewModel =
+        AutocompleteViewModel()
     override fun onCreate(savedInstanceState: Bundle?) {
         DataService.init(this)
         setTheme(R.style.Theme_StockSearch)
@@ -91,7 +98,6 @@ class MainActivity : ComponentActivity() {
 object GlobalValues {
     var indentationValue = 16.dp
 }
-
 
 
 @Composable
@@ -189,7 +195,7 @@ fun MainContent() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAppTopBar(
-autocompleteViewModel:AutocompleteViewModel
+    autocompleteViewModel: AutocompleteViewModel
 
 ) {
 
@@ -202,7 +208,6 @@ autocompleteViewModel:AutocompleteViewModel
         var showBackBtn by remember { mutableStateOf(false) }
         var showTitle by remember { mutableStateOf(true) }
         var showInput by remember { mutableStateOf(false) }
-
 
 
         val inputFocusRequester = remember { FocusRequester() }
@@ -253,56 +258,55 @@ autocompleteViewModel:AutocompleteViewModel
 
 
 
-                        TextField(
+                    TextField(
 
-                            value = textInput,
-                            modifier = Modifier
-                                .width(290.dp)
-                                .focusRequester(inputFocusRequester),
+                        value = textInput,
+                        modifier = Modifier
+                            .width(290.dp)
+                            .focusRequester(inputFocusRequester),
 
-                            onValueChange = { newValue ->
-
-
-
-                                if (newValue != textInput) {
-
-                                    textInput = newValue.uppercase()
-
-                                    autocompleteViewModel.fetchData(textInput)
+                        onValueChange = { newValue ->
 
 
-                                }
+                            if (newValue != textInput) {
 
-                            },
+                                textInput = newValue.uppercase()
 
-                            singleLine = true,
-
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                imeAction = ImeAction.Search,
-                                keyboardType = KeyboardType.Text
-                            ),
-                            keyboardActions = KeyboardActions(onSearch = {
-
-
-                                val intent = Intent(mContext, StockDetailActivity::class.java)
-                                intent.putExtra("SearchTicker", textInput)
-
-                                mContext.startActivity(intent)
+                                autocompleteViewModel.fetchData(textInput)
 
 
                             }
 
-                            ),
+                        },
+
+                        singleLine = true,
+
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Search,
+                            keyboardType = KeyboardType.Text
+                        ),
+                        keyboardActions = KeyboardActions(onSearch = {
 
 
-                            )
+                            val intent = Intent(mContext, StockDetailActivity::class.java)
+                            intent.putExtra("SearchTicker", textInput)
+
+                            mContext.startActivity(intent)
+
+
+                        }
+
+                        ),
+
+
+                        )
 
 
                     LaunchedEffect(textInput) {
@@ -319,30 +323,33 @@ autocompleteViewModel:AutocompleteViewModel
                             }
                     }
 
-                       val autocompleteResultMap by autocompleteViewModel.autocompleteResultMap.collectAsState()
+                    val autocompleteResultMap by autocompleteViewModel.autocompleteResultMap.collectAsState()
 
 
 
-                        DropdownMenu(
-                            expanded = menuShouldExpand && textInput!=""&& autocompleteResultMap.containsKey(textInput)&& autocompleteResultMap[textInput]!!.isNotEmpty(),
-                            onDismissRequest = {menuShouldExpand=false },
-                            modifier = Modifier
-                                .width(290.dp)
-                                .heightIn(max = 350.dp)
+                    DropdownMenu(
+                        expanded = menuShouldExpand && textInput != "" && autocompleteResultMap.containsKey(
+                            textInput
+                        ) && autocompleteResultMap[textInput]!!.isNotEmpty(),
+                        onDismissRequest = { menuShouldExpand = false },
+                        modifier = Modifier
+                            .width(290.dp)
+                            .heightIn(max = 350.dp)
 
-                        ) {
+                    ) {
 
 
-                            autocompleteResultMap[textInput]?.forEach { item ->
-                                DropdownMenuItem(text = { Text(text = item.ticker+" | "+item.name) }, onClick = {
-                                    textInput=item.ticker
+                        autocompleteResultMap[textInput]?.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(text = item.ticker + " | " + item.name) },
+                                onClick = {
+                                    textInput = item.ticker
 
                                     menuShouldExpand = false
 
                                 })
-                            }
                         }
-
+                    }
 
 
                 }
@@ -363,7 +370,7 @@ autocompleteViewModel:AutocompleteViewModel
                 }
 
                 if (showClearBtn) {
-                    IconButton(onClick = { textInput="" }) {
+                    IconButton(onClick = { textInput = "" }) {
                         Icon(painterResource(id = R.drawable.ic_action_close), null)
                     }
                 }
@@ -479,9 +486,6 @@ fun PortfolioBalance(portfolioViewModel: PortfolioViewModel) {
 
     Divider()
 }
-
-
-
 
 
 @Composable

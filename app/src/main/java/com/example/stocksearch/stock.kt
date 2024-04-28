@@ -1,7 +1,6 @@
 package com.example.stocksearch
 
 
-
 data class Stock(
 
 
