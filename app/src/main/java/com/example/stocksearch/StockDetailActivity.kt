@@ -60,6 +60,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -208,47 +210,89 @@ Surface (modifier = Modifier.fillMaxWidth()){
 
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 30.dp),
 
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 //1st row
         Row(Modifier.fillMaxWidth() ) {
-            Text(profileData.getString("name"), modifier = Modifier.weight(5f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text("MSRP", modifier = Modifier.weight(4f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text("Change", modifier = Modifier.weight(6f).background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Text(profileData.getString("name"), modifier = Modifier
+                .weight(5f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text("MSRP", modifier = Modifier
+                .weight(4f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text("Change", modifier = Modifier
+                .weight(6f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
         }
         Spacer(modifier = Modifier.height(1.dp))
 
         // 2nd row
         Row(Modifier.fillMaxWidth()) {
-            Text("Total", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("totalMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("totalChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Text("Total", modifier = Modifier
+                .weight(5f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("totalMsprSum")), modifier = Modifier
+                .weight(4f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("totalChangeSum")), modifier = Modifier
+                .weight(6f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
         }
         Spacer(modifier = Modifier.height(1.dp))
 
         // 3rd row
         Row(Modifier.fillMaxWidth()) {
-            Text("Positive", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("positiveMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("positiveChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Text("Positive", modifier = Modifier
+                .weight(5f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("positiveMsprSum")), modifier = Modifier
+                .weight(4f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("positiveChangeSum")), modifier = Modifier
+                .weight(6f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
         }
         Spacer(modifier = Modifier.height(1.dp))
 
         // 4th row
         Row(Modifier.fillMaxWidth()) {
-            Text("Negative", modifier = Modifier.weight(5f) .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("negativeMsprSum")), modifier = Modifier.weight(4f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier.width(1.dp).background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("negativeChangeSum")), modifier = Modifier.weight(6f).background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Text("Negative", modifier = Modifier
+                .weight(5f)
+                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.2f",insiderData.getDouble("negativeMsprSum")), modifier = Modifier
+                .weight(4f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            Spacer(modifier = Modifier
+                .width(1.dp)
+                .background(Color.White))
+            Text(String.format("%.1f",insiderData.getDouble("negativeChangeSum")), modifier = Modifier
+                .weight(6f)
+                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
         }
     }
 
@@ -425,53 +469,56 @@ Surface (modifier = Modifier.fillMaxWidth()){
 
 
     @Composable
+    fun ChartFromHTML(path:String,visibility:MutableState<Boolean>){
+        val context = LocalContext.current
+        var webView = WebView(context)
+
+        var visible by remember {
+            visibility
+        }
+
+        var loaded by remember { mutableStateOf(false) }
+
+        webView.apply {
+            settings.javaScriptEnabled = true
+            webChromeClient = WebChromeClient()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    if (!loaded) {
+                        view?.evaluateJavascript("run('$searchedStock');", null)
+
+                        loaded = true
+                    }
+                }
+            }
+            webView= this
+        }
+
+        webView.loadUrl(path)
+
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+
+                webView
+            }
+        ) {
+            if (visible) {
+                it.visibility = android.view.View.VISIBLE
+            } else {
+                it.visibility = android.view.View.GONE
+            }
+        }
+
+
+    }
+
+    @Composable
     fun PriceChartTab() {
 
-        var context = LocalContext.current
-        var webView1 = WebView(context)
 
 
-        var hourChartLoaded by remember { mutableStateOf(false) }
-        var yearChartLoaded by remember { mutableStateOf(false) }
-        webView1.apply {
-            settings.javaScriptEnabled = true
-            webChromeClient = WebChromeClient()
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                    if (!hourChartLoaded) {
-                        view?.evaluateJavascript("loadHourChart('$searchedStock');", null)
-
-                        hourChartLoaded = true
-                    }
-                }
-            }
-            webView1 = this
-        }
-
-        webView1.loadUrl("file:///android_asset/hourChart.html")
-
-
-        var webView2 = WebView(context)
-
-        webView2.apply {
-            settings.javaScriptEnabled = true
-            webChromeClient = WebChromeClient()
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                    if (!yearChartLoaded) {
-                        view?.evaluateJavascript("loadYearChart('$searchedStock');", null)
-                        yearChartLoaded = true
-                    }
-
-                }
-            }
-            webView2 = this
-        }
-
-
-        webView2.loadUrl("file:///android_asset/yearChart.html")
 
 
         var tabIndex by remember { mutableStateOf(0) }
@@ -481,31 +528,28 @@ Surface (modifier = Modifier.fillMaxWidth()){
         Column(modifier = Modifier.fillMaxWidth()) {
 
 
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
 
-                    webView1
-                }
-            ) {
-                if (tabIndex == 0) {
-                    it.visibility = android.view.View.VISIBLE
-                } else {
-                    it.visibility = android.view.View.GONE
-                }
+
+            val hourChartVisibility = remember { mutableStateOf(true) }
+            val yearChartVisibility = remember { mutableStateOf(true) }
+
+            LaunchedEffect(tabIndex) {
+                hourChartVisibility.value = tabIndex == 0
+                yearChartVisibility.value = tabIndex == 1
             }
 
 
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { webView2 }
-            ) {
-                if (tabIndex == 1) {
-                    it.visibility = android.view.View.VISIBLE
-                } else {
-                    it.visibility = android.view.View.GONE
-                }
-            }
+                ChartFromHTML(path = "file:///android_asset/hourChart.html", visibility =hourChartVisibility )
+
+
+
+
+                ChartFromHTML(path = "file:///android_asset/yearChart.html", visibility =yearChartVisibility )
+
+
+
+
+
 
 
 
