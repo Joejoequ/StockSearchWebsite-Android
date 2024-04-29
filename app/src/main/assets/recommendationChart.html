@@ -57,17 +57,12 @@
 
 
         
+const maxRetryCount = 3;
+let retryCount = 0;
+const data = await fetchDataWithRetry('https://cs571a3-418806.uc.r.appspot.com/api/recommendation?symbol=' + ticker);
 
 
 
-
-        // Load the dataset
-        const data = await fetch('https://cs571a3-418806.uc.r.appspot.com/api/recommendation?symbol='+ticker)
-            .then(response => {
-
-                document.getElementById('spinner').style.display = 'none';
-                return response.json();
-            });
 
 
 
@@ -146,7 +141,23 @@
 
 
     }
-
+ function fetchDataWithRetry(url) {
+    return fetch(url)
+        .then(response => {
+            document.getElementById('spinner').style.display = 'none';
+            return response.json();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (retryCount < maxRetryCount) {
+                retryCount++;
+                console.log(`Retrying (${retryCount}/${maxRetryCount})...`);
+                return fetchDataWithRetry(url);
+            } else {
+                console.error('Max retry count exceeded');
+                throw error;
+            }
+        });}
 
 </script>
 

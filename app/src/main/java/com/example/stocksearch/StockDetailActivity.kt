@@ -2,23 +2,20 @@ package com.example.stocksearch
 
 
 import android.content.Intent
-import android.icu.number.Scale
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
 
 import androidx.compose.foundation.layout.IntrinsicSize
 
@@ -29,14 +26,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,19 +40,18 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -66,6 +60,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -94,7 +89,6 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -112,9 +106,11 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import org.json.JSONObject
-import java.sql.Timestamp
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
+import java.util.Date
+import java.util.Locale
 
 class StockDetailActivity : ComponentActivity() {
     var searchedStock: String = ""
@@ -384,75 +380,251 @@ class StockDetailActivity : ComponentActivity() {
     fun NewsSection() {
 
         val newsData by stockDetailViewModel.newsData.collectAsState()
+        var showDialog by remember { mutableStateOf(false) }
+        var clickedIndex by remember { mutableStateOf(0) }
 
-        Column {
 
+        if (newsData.length() > 0) {
+            val firstNews = newsData.getJSONObject(0)
 
-            for (index in 0 until newsData.length()) {
-                val news: JSONObject = newsData.get(index) as JSONObject
+            Column {
                 ElevatedCard(
                     elevation = CardDefaults.cardElevation(
                         defaultElevation = 4.dp
                     ), colors = CardDefaults.cardColors(containerColor = Color.White),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
+                        .heightIn(min = 320.dp)
                         .padding(3.dp)
+                        .clickable { showDialog = true;clickedIndex = 0 }
                 ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
 
-                    Row(modifier = Modifier.padding(start = 20.dp)) {
-                        Column(
+                        GlideImage(
+                            model = firstNews.getString("image"),
+                            contentDescription = "news-logo",
+                            contentScale = ContentScale.FillBounds,
+
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(top = 25.dp)
-                        ) {
+                                .fillMaxWidth(0.9f)
+                                .fillMaxHeight(0.8f)
 
-                            Text(
-                                text = news.getString("source") + " " + hourDuration(news.getLong("datetime")),
-                                modifier = Modifier.padding(bottom = 5.dp),
-                                fontSize = 14.sp,
-color=Color.Gray
+                                .clip(shape = RoundedCornerShape(8.dp))
+
+                        )
+
+                        Text(
+                            text = firstNews.getString("source") + " " + getDuration(
+                                firstNews.getLong(
+                                    "datetime"
                                 )
-                            Text(
-                                text = news.getString("headline"),
-
-                                fontSize = 14.sp,
-                                lineHeight = 16.sp,
-                                fontWeight = FontWeight.SemiBold
-                                )
-                        }
-
-                        Box(
+                            ),
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 6.dp)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            GlideImage(
-                                model = news.getString("image"),
-                                contentDescription = "news-logo",
-                                contentScale = ContentScale.FillBounds,
+                                .fillMaxWidth(0.9f)
+                                .padding(vertical = 4.dp),
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = firstNews.getString("headline"),
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            fontSize = 14.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
 
+
+
+
+                for (index in 1 until newsData.length()) {
+                    val news = newsData.getJSONObject(index)
+                    ElevatedCard(
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 4.dp
+                        ), colors = CardDefaults.cardColors(containerColor = Color.White),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .padding(3.dp)
+                            .clickable { showDialog = true;clickedIndex = index }
+                    ) {
+
+                        Row(modifier = Modifier.padding(start = 20.dp)) {
+                            Column(
                                 modifier = Modifier
-                                    .size(130.dp, 130.dp)
+                                    .weight(1f)
+                                    .padding(top = 25.dp)
+                            ) {
 
-                                    .clip(shape = RoundedCornerShape(8.dp))
+                                Text(
+                                    text = news.getString("source") + " " + getDuration(
+                                        news.getLong(
+                                            "datetime"
+                                        )
+                                    ),
+                                    modifier = Modifier.padding(bottom = 5.dp),
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    text = news.getString("headline"),
 
-                            )
+                                    fontSize = 14.sp,
+                                    lineHeight = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 6.dp)
+                                    .fillMaxHeight(),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                GlideImage(
+                                    model = news.getString("image"),
+                                    contentDescription = "news-logo",
+                                    contentScale = ContentScale.FillBounds,
+
+                                    modifier = Modifier
+                                        .size(130.dp, 130.dp)
+
+                                        .clip(shape = RoundedCornerShape(8.dp))
+
+                                )
+                            }
+
+
                         }
-
 
                     }
-
                 }
+
+
             }
 
 
+
+
+        } else {
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "No News Found")
+            }
         }
 
+
+        if (showDialog) {
+            val uriHandler = LocalUriHandler.current
+            val news = newsData.getJSONObject(clickedIndex)
+            AlertDialog(
+
+                containerColor = Color.White,
+                onDismissRequest = { showDialog = false },
+                title = {
+                    Column {
+                        Text(
+                            news.getString("source"), style = TextStyle(
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+
+                        Text(
+                            formatDate(news.getLong("datetime")),
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = Color.Gray,
+                            style = TextStyle(
+                                fontSize = 16.sp,
+
+                                )
+                        )
+                        Divider()
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            news.getString("headline"), style = TextStyle(
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            ), color = Color.Black
+                        )
+                        Text(news.getString("summary"),color = Color.Black)
+                        Row (Modifier.padding(top = 5.dp)){
+                            IconButton(
+                                onClick = {
+
+
+
+                                    uriHandler.openUri(news.getString("url"))
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    painterResource(id = R.drawable.chrome),
+                                    contentDescription = "chrome",
+                                    tint = Color.Unspecified
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    uriHandler.openUri("https://twitter.com/intent/tweet?text="+news.getString("headline")+"&url="+news.getString("url"))
+
+
+                                },
+
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    painterResource(id = R.drawable.twitter_x_icon),
+                                    contentDescription = "twitter",
+                                    tint = Color.Unspecified
+                                )
+                            }
+
+
+                            IconButton(
+                                onClick = {
+
+                                    uriHandler.openUri("https://www.facebook.com/sharer/sharer.php?u="+news.getString("url"))
+
+
+                                },
+
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    painterResource(id = R.drawable.facebook),
+                                    contentDescription = "facebook",
+                                    tint = Color.Unspecified
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+
+                }
+            )
+        }
     }
 
+    fun formatDate(timestamp: Long): String {
+        val date = Date(timestamp * 1000)
+        val format = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
+        return format.format(date)
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -504,15 +676,27 @@ color=Color.Gray
     }
 
 
-    private fun hourDuration(timestamp: Long): String {
+    private fun getDuration(timestamp: Long): String {
 
 
         val instant = Instant.ofEpochSecond(timestamp)
         val now = Instant.now()
 
         val duration = Duration.between(instant, now)
-        val hours = duration.toHours()
-        return "$hours hours ago"
+        val days = duration.toDays()
+        val hours = duration.toHours() % 24
+
+        return when {
+            days > 0 -> {
+                val dayString = if (days == 1L) "day" else "days"
+                "$days $dayString ago"
+            }
+
+            else -> {
+                val hourString = if (hours == 1L) "hour" else "hours"
+                "$hours $hourString ago"
+            }
+        }
     }
 
 
