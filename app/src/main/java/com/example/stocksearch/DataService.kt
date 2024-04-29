@@ -248,4 +248,34 @@ object DataService {
     }
 
 
+
+
+    fun fetchNewsDataFromAPI(
+        stockSymbol: String,
+        callback: (JSONArray) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/news?symbol=$stockSymbol"
+        val request = JsonArrayRequest(Request.Method.GET, url, null,
+            { response ->
+
+                Log.d("News API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("News API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
 }

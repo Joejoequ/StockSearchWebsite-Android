@@ -18,6 +18,8 @@ class StockDetailViewModel() : ViewModel() {
     var quoteDataLoaded = mutableStateOf(false)
 
     val peerData: MutableStateFlow<JSONArray> = MutableStateFlow(JSONArray())
+
+    val newsData: MutableStateFlow<JSONArray> = MutableStateFlow(JSONArray())
     val insiderData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
     val portfolioData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
 
@@ -63,6 +65,16 @@ class StockDetailViewModel() : ViewModel() {
                 callback = { response ->
                     quoteData.update { response }
                     quoteDataLoaded.value = true
+                },
+                errorCallback = { error ->
+                }
+            )
+
+
+
+            DataService.fetchNewsDataFromAPI(stockSymbol = symbolInput,
+                callback = { response ->
+                    newsData.update { response }
                 },
                 errorCallback = { error ->
                 }

@@ -2,20 +2,25 @@ package com.example.stocksearch
 
 
 import android.content.Intent
+import android.icu.number.Scale
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 
+import androidx.compose.foundation.layout.IntrinsicSize
 
 
 import androidx.compose.foundation.layout.Row
@@ -29,7 +34,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,8 +48,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -70,9 +80,11 @@ import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.colorResource
@@ -83,6 +95,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -98,6 +111,10 @@ import com.example.stocksearch.ui.theme.StockSearchTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
+import org.json.JSONObject
+import java.sql.Timestamp
+import java.time.Duration
+import java.time.Instant
 
 class StockDetailActivity : ComponentActivity() {
     var searchedStock: String = ""
@@ -165,6 +182,7 @@ class StockDetailActivity : ComponentActivity() {
                         SectionLabel(title = "Insights")
                         InsightSection()
                         SectionLabel(title = "News")
+                        NewsSection()
 
 
                     }
@@ -200,105 +218,238 @@ class StockDetailActivity : ComponentActivity() {
 
         val profileData by stockDetailViewModel.profileData.collectAsState()
         val insiderData by stockDetailViewModel.insiderData.collectAsState()
-Surface (modifier = Modifier.fillMaxWidth()){
-    Text(
-        text = "Social Sentiments",
-        fontSize = 19.sp,
-        textAlign = TextAlign.Center
-    )
-}
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Social Sentiments",
+                fontSize = 19.sp,
+                textAlign = TextAlign.Center
+            )
+        }
 
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 30.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 30.dp),
 
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 //1st row
-        Row(Modifier.fillMaxWidth() ) {
-            Text(profileData.getString("name"), modifier = Modifier
-                .weight(5f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text("MSRP", modifier = Modifier
-                .weight(4f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text("Change", modifier = Modifier
-                .weight(6f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-        }
-        Spacer(modifier = Modifier.height(1.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max)
+            ) {
+                Text(
+                    profileData.getString("name"), modifier = Modifier
+                        .weight(5f)
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    "MSRP", modifier = Modifier
+                        .weight(4f)
+                        .fillMaxHeight()
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    "Change", modifier = Modifier
+                        .weight(6f)
+                        .fillMaxHeight()
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+            }
+            Spacer(modifier = Modifier.height(1.dp))
 
-        // 2nd row
-        Row(Modifier.fillMaxWidth()) {
-            Text("Total", modifier = Modifier
-                .weight(5f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("totalMsprSum")), modifier = Modifier
-                .weight(4f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("totalChangeSum")), modifier = Modifier
-                .weight(6f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-        }
-        Spacer(modifier = Modifier.height(1.dp))
+            // 2nd row
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    "Total", modifier = Modifier
+                        .weight(5f)
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.2f", insiderData.getDouble("totalMsprSum")),
+                    modifier = Modifier
+                        .weight(4f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.1f", insiderData.getDouble("totalChangeSum")),
+                    modifier = Modifier
+                        .weight(6f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+            }
+            Spacer(modifier = Modifier.height(1.dp))
 
-        // 3rd row
-        Row(Modifier.fillMaxWidth()) {
-            Text("Positive", modifier = Modifier
-                .weight(5f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("positiveMsprSum")), modifier = Modifier
-                .weight(4f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("positiveChangeSum")), modifier = Modifier
-                .weight(6f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-        }
-        Spacer(modifier = Modifier.height(1.dp))
+            // 3rd row
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    "Positive", modifier = Modifier
+                        .weight(5f)
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.2f", insiderData.getDouble("positiveMsprSum")),
+                    modifier = Modifier
+                        .weight(4f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.1f", insiderData.getDouble("positiveChangeSum")),
+                    modifier = Modifier
+                        .weight(6f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+            }
+            Spacer(modifier = Modifier.height(1.dp))
 
-        // 4th row
-        Row(Modifier.fillMaxWidth()) {
-            Text("Negative", modifier = Modifier
-                .weight(5f)
-                .background(Color(0xFFE1E3E5)), color = Color(0xFF808281))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.2f",insiderData.getDouble("negativeMsprSum")), modifier = Modifier
-                .weight(4f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
-            Spacer(modifier = Modifier
-                .width(1.dp)
-                .background(Color.White))
-            Text(String.format("%.1f",insiderData.getDouble("negativeChangeSum")), modifier = Modifier
-                .weight(6f)
-                .background(Color(0xFFF2F2F2)), color = Color(0xFFB7B7B7))
+            // 4th row
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    "Negative", modifier = Modifier
+                        .weight(5f)
+                        .background(Color(0xFFE1E3E5)), color = Color(0xFF808281)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.2f", insiderData.getDouble("negativeMsprSum")),
+                    modifier = Modifier
+                        .weight(4f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .background(Color.White)
+                )
+                Text(
+                    String.format("%.1f", insiderData.getDouble("negativeChangeSum")),
+                    modifier = Modifier
+                        .weight(6f)
+                        .background(Color(0xFFF2F2F2)),
+                    color = Color(0xFFB7B7B7)
+                )
+            }
         }
+
+
+        ChartFromHTML(path = "file:///android_asset/recommendationChart.html")
+        ChartFromHTML(path = "file:///android_asset/epsChart.html")
+
     }
 
 
+    @OptIn(ExperimentalGlideComposeApi::class)
+    @Composable
+    fun NewsSection() {
+
+        val newsData by stockDetailViewModel.newsData.collectAsState()
+
+        Column {
 
 
+            for (index in 0 until newsData.length()) {
+                val news: JSONObject = newsData.get(index) as JSONObject
+                ElevatedCard(
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 4.dp
+                    ), colors = CardDefaults.cardColors(containerColor = Color.White),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .padding(3.dp)
+                ) {
+
+                    Row(modifier = Modifier.padding(start = 20.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(top = 25.dp)
+                        ) {
+
+                            Text(
+                                text = news.getString("source") + " " + hourDuration(news.getLong("datetime")),
+                                modifier = Modifier.padding(bottom = 5.dp),
+                                fontSize = 14.sp,
+color=Color.Gray
+                                )
+                            Text(
+                                text = news.getString("headline"),
+
+                                fontSize = 14.sp,
+                                lineHeight = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                                )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 6.dp)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            GlideImage(
+                                model = news.getString("image"),
+                                contentDescription = "news-logo",
+                                contentScale = ContentScale.FillBounds,
+
+                                modifier = Modifier
+                                    .size(130.dp, 130.dp)
+
+                                    .clip(shape = RoundedCornerShape(8.dp))
+
+                            )
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+        }
 
     }
 
@@ -353,6 +504,18 @@ Surface (modifier = Modifier.fillMaxWidth()){
     }
 
 
+    private fun hourDuration(timestamp: Long): String {
+
+
+        val instant = Instant.ofEpochSecond(timestamp)
+        val now = Instant.now()
+
+        val duration = Duration.between(instant, now)
+        val hours = duration.toHours()
+        return "$hours hours ago"
+    }
+
+
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     fun StockProfileCard(stockDetailViewModel: StockDetailViewModel) {
@@ -378,7 +541,7 @@ Surface (modifier = Modifier.fillMaxWidth()){
                 GlideImage(
                     model = profileData.getString("logo"),
                     contentDescription = "stock_detail_logo",
-                    modifier = Modifier.size(50.dp),
+                    modifier = Modifier.size(50.dp, 50.dp),
                     loading = placeholder(circularProgressDrawable),
                     failure = placeholder(R.drawable.launcher)
 
@@ -469,7 +632,11 @@ Surface (modifier = Modifier.fillMaxWidth()){
 
 
     @Composable
-    fun ChartFromHTML(path:String,visibility:MutableState<Boolean>){
+    fun ChartFromHTML(
+        path: String, visibility: MutableState<Boolean> = remember {
+            mutableStateOf(true)
+        }
+    ) {
         val context = LocalContext.current
         var webView = WebView(context)
 
@@ -492,7 +659,7 @@ Surface (modifier = Modifier.fillMaxWidth()){
                     }
                 }
             }
-            webView= this
+            webView = this
         }
 
         webView.loadUrl(path)
@@ -505,9 +672,9 @@ Surface (modifier = Modifier.fillMaxWidth()){
             }
         ) {
             if (visible) {
-                it.visibility = android.view.View.VISIBLE
+                it.visibility = View.VISIBLE
             } else {
-                it.visibility = android.view.View.GONE
+                it.visibility = View.GONE
             }
         }
 
@@ -518,16 +685,11 @@ Surface (modifier = Modifier.fillMaxWidth()){
     fun PriceChartTab() {
 
 
-
-
-
         var tabIndex by remember { mutableStateOf(0) }
 
         val tabs = listOf("hour", "year")
 
         Column(modifier = Modifier.fillMaxWidth()) {
-
-
 
 
             val hourChartVisibility = remember { mutableStateOf(true) }
@@ -539,12 +701,18 @@ Surface (modifier = Modifier.fillMaxWidth()){
             }
 
 
-                ChartFromHTML(path = "file:///android_asset/hourChart.html", visibility =hourChartVisibility )
+            ChartFromHTML(
+                path = "file:///android_asset/hourChart.html",
+                visibility = hourChartVisibility
+            )
 
 
 
 
-                ChartFromHTML(path = "file:///android_asset/yearChart.html", visibility =yearChartVisibility )
+            ChartFromHTML(
+                path = "file:///android_asset/yearChart.html",
+                visibility = yearChartVisibility
+            )
 
 
 
@@ -689,9 +857,11 @@ Surface (modifier = Modifier.fillMaxWidth()){
             peerList.add(peerData.getString(i))
         }
 
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
             Column {
                 Text(text = "IPO Start Date")
                 Spacer(modifier = Modifier.height(8.dp))
@@ -704,25 +874,30 @@ Surface (modifier = Modifier.fillMaxWidth()){
             Column(modifier = Modifier.padding(start = 20.dp)) {
                 Text(text = profileData.getString("ipo"))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text =  profileData.getString("finnhubIndustry"))
+                Text(text = profileData.getString("finnhubIndustry"))
                 Spacer(modifier = Modifier.height(10.dp))
 
-                HyperLink(linkText = profileData.getString("weburl"), link =profileData.getString("weburl"),true)
-
+                HyperLink(
+                    linkText = profileData.getString("weburl"),
+                    link = profileData.getString("weburl"),
+                    true
+                )
 
 
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
             Text(text = "Company Peers")
 
-            LazyRow (modifier = Modifier.padding(start =8.dp, top = 3.dp)){
+            LazyRow(modifier = Modifier.padding(start = 8.dp, top = 3.dp)) {
                 items(count = peerList.size) { index ->
 
-                    HyperLink(linkText = peerList[index], link =peerList[index],false)
+                    HyperLink(linkText = peerList[index], link = peerList[index], false)
                     Spacer(modifier = Modifier.width(5.dp))
 
                 }
@@ -731,53 +906,52 @@ Surface (modifier = Modifier.fillMaxWidth()){
         }
     }
 
-@Composable
-fun HyperLink(linkText:String,link:String,url:Boolean){
-    val mContext = LocalContext.current
-    val text = AnnotatedString.Builder().apply {
-        withStyle(
-            style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)
-        ) {
-            append(linkText)
-            addStringAnnotation(
-                tag = "URL",
-                annotation = link,
-                start = 0,
-                end = length
-            )
+    @Composable
+    fun HyperLink(linkText: String, link: String, url: Boolean) {
+        val mContext = LocalContext.current
+        val text = AnnotatedString.Builder().apply {
+            withStyle(
+                style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)
+            ) {
+                append(linkText)
+                addStringAnnotation(
+                    tag = "URL",
+                    annotation = link,
+                    start = 0,
+                    end = length
+                )
+            }
+        }.toAnnotatedString()
+        val uriHandler = LocalUriHandler.current
+        ClickableText(text = text, style = TextStyle(
+
+            fontSize = 16.sp
+        ), onClick = { offset ->
+
+
+            if (url) {
+                val url = text.getStringAnnotations("URL", offset, offset)
+                    .firstOrNull()?.item
+
+
+                if (url != null) {
+                    uriHandler.openUri(url)
+                }
+            } else {
+
+                val intent = Intent(mContext, StockDetailActivity::class.java)
+                intent.putExtra("SearchTicker", link)
+
+                mContext.startActivity(intent)
+
+            }
         }
-    }.toAnnotatedString()
-    val uriHandler = LocalUriHandler.current
-    ClickableText(text = text,style = TextStyle(
-
-        fontSize = 16.sp
-    ), onClick = { offset ->
 
 
-        if (url){
-            val url = text.getStringAnnotations("URL", offset, offset)
-                .firstOrNull()?.item
+        )
 
 
-            if (url != null) {
-                uriHandler.openUri(url)
-            }}
-
-        else{
-
-            val intent = Intent(mContext, StockDetailActivity::class.java)
-            intent.putExtra("SearchTicker", link)
-
-            mContext.startActivity(intent)
-
-        }
-        }
-
-
-    )
-
-
-}
+    }
 
     @Preview(showBackground = true)
     @Composable
