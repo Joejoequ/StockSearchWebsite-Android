@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
 
         Scaffold(
             topBar = {
-                MyAppTopBar(autocompleteViewModel)
+                MyAppTopBar()
 
             },
         ) { innerPadding ->
@@ -176,9 +176,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         TimeSection()
                         MyAppLabel(labelText = "PORTFOLIO")
-                        PortfolioSection(portfolioViewModel)
+                        PortfolioSection()
                         MyAppLabel(labelText = "FAVORITES")
-                        WatchlistSection(watchlistViewModel)
+                        WatchlistSection()
                         ReferenceSection()
                     }
 
@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun MyAppTopBar(
-        autocompleteViewModel: AutocompleteViewModel
+
 
     ) {
 
@@ -436,10 +436,10 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun PortfolioSection(portfolioViewModel: PortfolioViewModel) {
+    fun PortfolioSection() {
 
 
-        PortfolioBalance(portfolioViewModel = portfolioViewModel)
+        PortfolioBalance()
 
         val stocksListState = portfolioViewModel.stocksState
 
@@ -450,7 +450,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun PortfolioBalance(portfolioViewModel: PortfolioViewModel) {
+    fun PortfolioBalance() {
 
 
         Surface(
@@ -699,7 +699,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun WatchlistSection(watchlistViewModel: WatchlistViewModel) {
+    fun WatchlistSection() {
 
 
         val stocksListState = watchlistViewModel.stocksState

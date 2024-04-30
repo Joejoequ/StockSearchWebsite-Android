@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 import org.json.JSONArray
 import org.json.JSONObject
 
-class StockDetailViewModel() : ViewModel() {
+class StockDetailViewModel(symbol:String) : ViewModel() {
 
     val profileData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
     val quoteData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
@@ -24,6 +24,8 @@ class StockDetailViewModel() : ViewModel() {
     val portfolioData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
 
     var ifInWatchlist = mutableStateOf(false)
+
+    var symbolInput=symbol
 
     init {
         val newStock = JSONObject()
@@ -48,7 +50,7 @@ class StockDetailViewModel() : ViewModel() {
         insiderData.update { insider }
     }
 
-    fun fetchData(symbolInput: String) {
+    fun fetchData() {
         try {
             profileDataLoaded.value = false
             quoteDataLoaded.value = false
@@ -146,50 +148,7 @@ class StockDetailViewModel() : ViewModel() {
 
 
 
-            DataService.fetchPortfolioDataFromAPI(
-                callback = { response ->
-                    var found = false
-                    val newStock = JSONObject()
-
-                    (0 until response.getJSONArray("stocks").length()).forEach {
-                        val stock = response.getJSONArray("stocks").getJSONObject(it)
-                        if (stock.getString("ticker") == symbolInput) {
-
-                            var avgCost = stock.getDouble("cost") / stock.getInt("quantity")
-
-
-                            newStock.put("ticker", stock.getString("ticker"))
-                            newStock.put("quantity", stock.getInt("quantity"))
-                            newStock.put("avgCost", avgCost)
-                            newStock.put("totalCost", stock.getDouble("cost"))
-                            newStock.put("change", stock.getDouble("price") - avgCost)
-                            newStock.put(
-                                "marketValue",
-                                stock.getDouble("price") * stock.getInt("quantity")
-                            )
-                            found = true
-                        }
-                    }
-
-
-                    if (!found) {
-
-                        newStock.put("ticker", symbolInput)
-                        newStock.put("quantity", 0)
-                        newStock.put("totalCost", 0.0)
-                        newStock.put("avgCost", 0.0)
-                        newStock.put("change", 0.0)
-                        newStock.put("marketValue", 0.0)
-
-
-                    }
-
-                    portfolioData.update { newStock }
-
-                },
-                errorCallback = { error ->
-                }
-            )
+            updatePortfolioData()
 
 
         } catch (e: Exception) {
@@ -197,6 +156,53 @@ class StockDetailViewModel() : ViewModel() {
         }
 
 
+    }
+
+    fun updatePortfolioData(){
+        DataService.fetchPortfolioDataFromAPI(
+            callback = { response ->
+                var found = false
+                val newStock = JSONObject()
+
+                (0 until response.getJSONArray("stocks").length()).forEach {
+                    val stock = response.getJSONArray("stocks").getJSONObject(it)
+                    if (stock.getString("ticker") == symbolInput) {
+
+                        var avgCost = stock.getDouble("cost") / stock.getInt("quantity")
+
+
+                        newStock.put("ticker", stock.getString("ticker"))
+                        newStock.put("quantity", stock.getInt("quantity"))
+                        newStock.put("avgCost", avgCost)
+                        newStock.put("totalCost", stock.getDouble("cost"))
+                        newStock.put("change", stock.getDouble("price") - avgCost)
+                        newStock.put(
+                            "marketValue",
+                            stock.getDouble("price") * stock.getInt("quantity")
+                        )
+                        found = true
+                    }
+                }
+
+
+                if (!found) {
+
+                    newStock.put("ticker", symbolInput)
+                    newStock.put("quantity", 0)
+                    newStock.put("totalCost", 0.0)
+                    newStock.put("avgCost", 0.0)
+                    newStock.put("change", 0.0)
+                    newStock.put("marketValue", 0.0)
+
+
+                }
+
+                portfolioData.update { newStock }
+
+            },
+            errorCallback = { error ->
+            }
+        )
     }
 
     fun addToWatchlist(symbol:String,context:Context){

@@ -1,8 +1,10 @@
 package com.example.stocksearch.viewmodel
 
 import DataService
+import android.content.Context
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.stocksearch.Stock
@@ -10,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.json.JSONObject
 
 
 class PortfolioViewModel() : ViewModel() {
@@ -97,6 +100,29 @@ class PortfolioViewModel() : ViewModel() {
             e.message?.let { Log.d("Error", it) }
         }
 
+    }
+
+    fun buyStock(symbolStock: String, quantity: Int, onSuccess:  (JSONObject) -> Unit) {
+        DataService.sendBuyStockAPI(stockSymbol = symbolStock, quantity = quantity,
+            callback = { response ->
+
+
+                onSuccess(response)
+            },
+            errorCallback = { error ->
+            }
+        )
+    }
+
+    fun sellStock(symbolStock: String, quantity: Int, onSuccess:  (JSONObject) -> Unit) {
+        DataService.sendSellStockAPI(stockSymbol = symbolStock, quantity = quantity,
+            callback = { response ->
+
+                onSuccess(response)
+            },
+            errorCallback = { error ->
+            }
+        )
     }
 
 

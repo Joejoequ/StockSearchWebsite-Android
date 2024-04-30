@@ -365,4 +365,75 @@ object DataService {
     }
 
 
+
+
+    fun sendBuyStockAPI(
+        stockSymbol: String,quantity:Int,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/portfolio/buy"
+
+        val jsonObject = JSONObject().apply {
+            put("userid", UserService.getUserId())
+            put("ticker", stockSymbol)
+            put("quantity", quantity)
+        }
+
+        val request =  JsonObjectRequest(Request.Method.POST, url,jsonObject,
+            { response ->
+
+                Log.d("sendBuyStock API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("sendBuyStock API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+
+
+        requestQueue.add(request)
+
+    }
+
+
+
+
+    fun sendSellStockAPI(
+        stockSymbol: String,quantity: Int,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/portfolio/sell"
+        val jsonObject = JSONObject().apply {
+            put("userid", UserService.getUserId())
+            put("ticker", stockSymbol)
+            put("quantity", quantity)
+        }
+
+
+        val request =  JsonObjectRequest(Request.Method.POST, url,jsonObject,
+            { response ->
+
+                Log.d("sendSellStock API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("sendSellStock API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+
+
+        requestQueue.add(request)
+
+    }
+
+
+
+
+
+
+
 }

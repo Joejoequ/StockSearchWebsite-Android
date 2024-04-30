@@ -7,11 +7,13 @@ import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -60,6 +64,8 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -75,6 +81,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -88,7 +95,10 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -105,6 +115,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.example.stocksearch.R
+import com.example.stocksearch.viewmodel.PortfolioViewModel
 import com.example.stocksearch.viewmodel.StockDetailViewModel
 import java.text.SimpleDateFormat
 import java.time.Duration
@@ -114,7 +125,8 @@ import java.util.Locale
 
 class StockDetailActivity : ComponentActivity() {
     var searchedStock: String = ""
-    val stockDetailViewModel = StockDetailViewModel()
+    lateinit var stockDetailViewModel: StockDetailViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_StockSearch)
         super.onCreate(savedInstanceState)
@@ -127,8 +139,8 @@ class StockDetailActivity : ComponentActivity() {
                 StockDetailContent()
             }
         }
-
-        stockDetailViewModel.fetchData(searchedStock)
+        stockDetailViewModel = StockDetailViewModel(searchedStock)
+        stockDetailViewModel.fetchData()
 
     }
 
@@ -166,7 +178,7 @@ class StockDetailActivity : ComponentActivity() {
                             .verticalScroll(rememberScrollState())
                     ) {
 
-                        StockProfileCard(stockDetailViewModel)
+                        StockProfileCard()
                         PriceChartTab()
 
                         SectionLabel(title = "Portfolio")
@@ -177,6 +189,7 @@ class StockDetailActivity : ComponentActivity() {
                         AboutSection()
                         SectionLabel(title = "Insights")
                         InsightSection()
+
                         SectionLabel(title = "News")
                         NewsSection()
 
@@ -204,9 +217,575 @@ class StockDetailActivity : ComponentActivity() {
 
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun SectionLabel(title: String) {
-        Text(modifier = Modifier.padding(top = 20.dp, start = 10.dp), text = title)
+    fun MyAppTopBar(
+
+
+    ) {
+
+
+        Surface(shadowElevation = 8.dp) {
+
+
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = Color.Black,
+                ),
+                title = {
+
+                    Text(
+                        searchedStock,
+                        modifier = Modifier.padding(horizontal = GlobalValues.indentationValue)
+                    )
+
+                },
+
+                navigationIcon = {
+
+                    IconButton(onClick = {
+                        finish()
+
+                    }) {
+                        Icon(Icons.Filled.ArrowBack, null)
+                    }
+
+
+                },
+
+                actions = {
+
+                    val context = LocalContext.current
+                    val inWatchlist by remember {
+                        stockDetailViewModel.ifInWatchlist
+                    }
+                    if (!inWatchlist)
+                        IconButton(onClick = {
+                            stockDetailViewModel.addToWatchlist(searchedStock, context)
+                        }) {
+                            Icon(painter = painterResource(id = R.drawable.star_border), null)
+                        }
+                    else {
+                        IconButton(onClick = {
+                            stockDetailViewModel.removeFromWatchlist(searchedStock, context)
+                        }) {
+                            Icon(painter = painterResource(id = R.drawable.full_star), null)
+                        }
+                    }
+                }
+            )
+
+
+        }
+
+    }
+
+    @Composable
+    fun PriceChartTab() {
+
+
+        var tabIndex by remember { mutableStateOf(0) }
+
+        val tabs = listOf("hour", "year")
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+
+
+            val hourChartVisibility = remember { mutableStateOf(true) }
+            val yearChartVisibility = remember { mutableStateOf(true) }
+
+            LaunchedEffect(tabIndex) {
+                hourChartVisibility.value = tabIndex == 0
+                yearChartVisibility.value = tabIndex == 1
+            }
+
+
+            ChartFromHTML(
+                path = "file:///android_asset/hourChart.html",
+                visibility = hourChartVisibility
+            )
+
+
+
+
+            ChartFromHTML(
+                path = "file:///android_asset/yearChart.html",
+                visibility = yearChartVisibility
+            )
+
+
+
+
+
+
+
+
+
+
+            TabRow(selectedTabIndex = tabIndex, indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
+                    color = colorResource(id = R.color.purple_700)
+                )
+            }, contentColor = colorResource(id = R.color.purple_700)) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+
+                        selected = tabIndex == index,
+                        onClick = { tabIndex = index },
+                        icon = {
+                            when (index) {
+                                0 -> Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_hour),
+                                    contentDescription = null
+                                )
+
+                                1 -> Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_historical),
+                                    contentDescription = null
+                                )
+
+                            }
+                        }
+                    )
+                }
+            }
+
+        }
+    }
+
+    @Composable
+    fun PortfolioSection() {
+        val portfolioData by stockDetailViewModel.portfolioData.collectAsState()
+        var showDialog = remember { mutableStateOf(false) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+
+            Row(
+                modifier = Modifier.padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+
+                    Text(text = "Shares Owned:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Avg. Cost/Share:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Total Cost:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Change:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Market Value:")
+                }
+                Column(modifier = Modifier.padding(start = 15.dp)) {
+
+                    Text(text = portfolioData.getInt("quantity").toString())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("avgCost")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("totalCost")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("change")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", portfolioData.getDouble("marketValue")))
+                }
+            }
+
+            Button(
+                onClick = { showDialog.value = true },
+                modifier = Modifier.padding(end = 20.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0FA128),
+                    contentColor = Color(0xFFFFFFFF)
+                )
+            ) {
+                Text("Trade")
+            }
+        }
+
+
+        if (showDialog.value) {
+            val portfolioViewModel = PortfolioViewModel()
+            portfolioViewModel.fetchData()
+            val quoteData by stockDetailViewModel.quoteData.collectAsState()
+            val profileData by stockDetailViewModel.profileData.collectAsState()
+            var textInput by remember { mutableStateOf("") }
+            val showResult = remember { mutableStateOf(false) }
+
+            var resultMsg = remember { mutableStateOf("") }
+            if (!showResult.value) {
+                AlertDialog(
+
+                    containerColor = Color.White,
+                    onDismissRequest = { showDialog.value = false },
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Trade ${profileData.getString("name")} shares",
+                                textAlign = TextAlign.Center,
+                                style = TextStyle(
+                                    fontSize = 17.sp,
+
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+                    },
+                    text = {
+                        Column {
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextField(
+
+                                    value = textInput,
+                                    modifier = Modifier
+                                        .width(200.dp)
+                                        .height(50.dp),
+
+                                    placeholder = {
+                                        Text("0", color = Color.Gray)
+                                    },
+
+                                    onValueChange = {
+                                        textInput = it
+                                    },
+
+                                    singleLine = true,
+
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        disabledContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Cyan,
+                                        unfocusedIndicatorColor = Color.Cyan,
+                                    ),
+                                    keyboardOptions = KeyboardOptions(
+
+                                        keyboardType = KeyboardType.Number
+                                    ),
+
+
+                                    )
+
+                                Text(text = "shares", color = Color.Black)
+
+                            }
+
+                            val price: Double = quoteData.getDouble("c")
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 20.dp)
+                                    .background(Color.White),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+
+
+                                if (!validateInput(textInput)) {
+                                    Text(
+                                        text = "0*" + "%.2f".format(price) + "/share = 0.0",
+                                        color = Color.Black
+                                    )
+                                } else {
+                                    Text(
+                                        text = textInput.toDouble()
+                                            .toString() + "*" + "%.2f".format(
+                                            price
+                                        ) + "/share = " + "%.2f".format(textInput.toDouble() * price),
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+
+
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 15.dp),
+                                textAlign = TextAlign.Center,
+                                text = "$${portfolioViewModel.portfolioBalance} to buy " + searchedStock
+                            )
+
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+
+                                val mContext = LocalContext.current
+                                Button(
+                                    onClick = {
+                                        if (!validateInput(textInput)) {
+                                            Toast.makeText(
+                                                mContext,
+                                                "Please enter a valid amount",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+
+                                            portfolioViewModel.buyStock(searchedStock,
+                                                textInput.toInt(),
+                                                onSuccess =
+                                                { response ->
+
+                                                    if (response.getBoolean("success")) {
+
+                                                        stockDetailViewModel.updatePortfolioData()
+                                                        resultMsg.value =
+                                                            "You have successfully bought ${textInput.toInt()} shares of ${searchedStock}"
+                                                        showResult.value = true
+                                                    } else {
+                                                        Toast.makeText(
+                                                            mContext,
+                                                            "Not enough money to buy",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+
+
+                                                })
+
+                                        }
+                                    },
+                                    modifier = Modifier.width(100.dp),
+                                    shape = RoundedCornerShape(3.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF0FA128),
+                                        contentColor = Color(0xFFFFFFFF)
+                                    )
+                                ) {
+                                    Text("Buy")
+                                }
+                                Spacer(modifier = Modifier.width(40.dp))
+
+
+                                Button(
+                                    onClick = {
+                                        if (!validateInput(textInput)) {
+                                            Toast.makeText(
+                                                mContext,
+                                                "Please enter a valid amount",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+
+                                            portfolioViewModel.sellStock(
+                                                searchedStock,
+                                                textInput.toInt(),
+                                                onSuccess = { response ->
+                                                    if (response.getBoolean("success")) {
+                                                        stockDetailViewModel.updatePortfolioData()
+                                                        resultMsg.value =
+                                                            "You have successfully sold ${textInput.toInt()} shares of ${searchedStock}"
+                                                        showResult.value = true
+                                                    } else {
+                                                        Toast.makeText(
+                                                            mContext,
+                                                            "Not enough shares to sell",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+
+                                                })
+
+
+                                        }
+
+
+                                    },
+                                    modifier = Modifier.width(100.dp),
+                                    shape = RoundedCornerShape(3.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF0FA128),
+                                        contentColor = Color(0xFFFFFFFF)
+                                    )
+                                ) {
+                                    Text("Sell")
+                                }
+                            }
+
+                        }
+                    },
+                    confirmButton = {
+
+                    }
+                )
+            } else {
+                AlertDialog(
+
+                    containerColor = Color(0xFF0FA128),
+                    onDismissRequest = { showDialog.value = false },
+                    title = {
+
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 30.dp), horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Congratulations!",
+                                color = Color.White,
+                                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                            )
+                        }
+
+                    },
+                    text = {
+                        val msg by remember {
+                            resultMsg
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                modifier = Modifier.fillMaxWidth(0.6f),
+                                text = msg,
+                                color = Color.White,
+                                style = TextStyle(
+                                    fontStyle = FontStyle.Italic,
+                                    fontSize = 14.sp
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+
+                    }, confirmButton = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Button(
+                                onClick = { showDialog.value = false },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.8f)
+                                    .padding(bottom = 20.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFFFFF),
+                                    contentColor = Color(0xFF0FA128)
+                                )
+                            ) {
+                                Text("Done")
+                            }
+
+
+                        }
+
+                    })
+            }
+        }
+
+    }
+
+
+    @Composable
+    fun StatsSection() {
+        val quoteData by stockDetailViewModel.quoteData.collectAsState()
+
+        Row(modifier = Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.weight(1f)) {
+                Column {
+                    Text("Open Price:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Low Price:")
+                }
+
+                Column {
+                    Text(text = String.format("%.2f", quoteData.getDouble("o")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", quoteData.getDouble("l")))
+
+                }
+            }
+            Row(modifier = Modifier.weight(1f)) {
+                Column {
+                    Text("High Price:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Prev. Close:")
+                }
+                Column {
+                    Text(text = String.format("%.2f", quoteData.getDouble("h")))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = String.format("%.2f", quoteData.getDouble("pc")))
+                }
+
+            }
+        }
+    }
+
+    @Composable
+    fun AboutSection() {
+
+        val profileData by stockDetailViewModel.profileData.collectAsState()
+
+        val peerData by stockDetailViewModel.peerData.collectAsState()
+        val peerList = mutableListOf<String>()
+        for (i in 0 until peerData.length()) {
+            peerList.add(peerData.getString(i))
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Column {
+                Text(text = "IPO Start Date")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "Industry")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "Webpage")
+
+
+            }
+            Column(modifier = Modifier.padding(start = 20.dp)) {
+                Text(text = profileData.getString("ipo"))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = profileData.getString("finnhubIndustry"))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                HyperLink(
+                    linkText = profileData.getString("weburl"),
+                    link = profileData.getString("weburl"),
+                    true
+                )
+
+
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
+            Text(text = "Company Peers")
+
+            LazyRow(modifier = Modifier.padding(start = 8.dp, top = 3.dp)) {
+                items(count = peerList.size) { index ->
+
+                    HyperLink(linkText = peerList[index], link = peerList[index], false)
+                    Spacer(modifier = Modifier.width(5.dp))
+
+                }
+            }
+
+        }
     }
 
     @Composable
@@ -368,8 +947,9 @@ class StockDetailActivity : ComponentActivity() {
             }
         }
 
-
+        Spacer(modifier = Modifier.height(40.dp))
         ChartFromHTML(path = "file:///android_asset/recommendationChart.html")
+
         ChartFromHTML(path = "file:///android_asset/epsChart.html")
 
     }
@@ -387,7 +967,7 @@ class StockDetailActivity : ComponentActivity() {
         if (newsData.length() > 0) {
             val firstNews = newsData.getJSONObject(0)
 
-            Column {
+            Column (Modifier.padding(top=20.dp)){
                 ElevatedCard(
                     elevation = CardDefaults.cardElevation(
                         defaultElevation = 4.dp
@@ -625,104 +1205,15 @@ class StockDetailActivity : ComponentActivity() {
         }
     }
 
-    fun formatDate(timestamp: Long): String {
-        val date = Date(timestamp * 1000)
-        val format = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
-        return format.format(date)
-    }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun MyAppTopBar(
-
-
-    ) {
-
-
-        Surface(shadowElevation = 8.dp) {
-
-
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                ),
-                title = {
-
-                    Text(
-                        searchedStock,
-                        modifier = Modifier.padding(horizontal = GlobalValues.indentationValue)
-                    )
-
-                },
-
-                navigationIcon = {
-
-                    IconButton(onClick = {
-                        finish()
-
-                    }) {
-                        Icon(Icons.Filled.ArrowBack, null)
-                    }
-
-
-                },
-
-                actions = {
-
-                    val context = LocalContext.current
-                    val inWatchlist by remember {
-                        stockDetailViewModel.ifInWatchlist
-                    }
-                    if (!inWatchlist)
-                        IconButton(onClick = {
-                            stockDetailViewModel.addToWatchlist(searchedStock,context)
-                        }) {
-                            Icon(painter = painterResource(id = R.drawable.star_border), null)
-                        }
-                    else {
-                        IconButton(onClick = {
-                            stockDetailViewModel.removeFromWatchlist(searchedStock,context)
-                        }) {
-                            Icon(painter = painterResource(id = R.drawable.full_star), null)
-                        }
-                    }
-                }
-            )
-
-
-        }
-
+    fun SectionLabel(title: String) {
+        Text(modifier = Modifier.padding(top = 20.dp, start = 10.dp), text = title, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp))
     }
-
-
-    private fun getDuration(timestamp: Long): String {
-
-
-        val instant = Instant.ofEpochSecond(timestamp)
-        val now = Instant.now()
-
-        val duration = Duration.between(instant, now)
-        val days = duration.toDays()
-        val hours = duration.toHours() % 24
-
-        return when {
-            days > 0 -> {
-                val dayString = if (days == 1L) "day" else "days"
-                "$days $dayString ago"
-            }
-
-            else -> {
-                val hourString = if (hours == 1L) "hour" else "hours"
-                "$hours $hourString ago"
-            }
-        }
-    }
-
 
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun StockProfileCard(stockDetailViewModel: StockDetailViewModel) {
+    fun StockProfileCard() {
 
         val profileData by stockDetailViewModel.profileData.collectAsState()
         val quoteData by stockDetailViewModel.quoteData.collectAsState()
@@ -834,7 +1325,6 @@ class StockDetailActivity : ComponentActivity() {
 
     }
 
-
     @Composable
     fun ChartFromHTML(
         path: String, visibility: MutableState<Boolean> = remember {
@@ -885,230 +1375,44 @@ class StockDetailActivity : ComponentActivity() {
 
     }
 
-    @Composable
-    fun PriceChartTab() {
-
-
-        var tabIndex by remember { mutableStateOf(0) }
-
-        val tabs = listOf("hour", "year")
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-
-
-            val hourChartVisibility = remember { mutableStateOf(true) }
-            val yearChartVisibility = remember { mutableStateOf(true) }
-
-            LaunchedEffect(tabIndex) {
-                hourChartVisibility.value = tabIndex == 0
-                yearChartVisibility.value = tabIndex == 1
-            }
-
-
-            ChartFromHTML(
-                path = "file:///android_asset/hourChart.html",
-                visibility = hourChartVisibility
-            )
-
-
-
-
-            ChartFromHTML(
-                path = "file:///android_asset/yearChart.html",
-                visibility = yearChartVisibility
-            )
-
-
-
-
-
-
-
-
-
-
-            TabRow(selectedTabIndex = tabIndex, indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
-                    color = colorResource(id = R.color.purple_700)
-                )
-            }, contentColor = colorResource(id = R.color.purple_700)) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-
-                        selected = tabIndex == index,
-                        onClick = { tabIndex = index },
-                        icon = {
-                            when (index) {
-                                0 -> Icon(
-                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_hour),
-                                    contentDescription = null
-                                )
-
-                                1 -> Icon(
-                                    imageVector = ImageVector.vectorResource(id = R.drawable.chart_historical),
-                                    contentDescription = null
-                                )
-
-                            }
-                        }
-                    )
-                }
-            }
-
-        }
+    fun formatDate(timestamp: Long): String {
+        val date = Date(timestamp * 1000)
+        val format = SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
+        return format.format(date)
     }
 
-    @Composable
-    fun PortfolioSection() {
-        val portfolioData by stockDetailViewModel.portfolioData.collectAsState()
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    private fun getDuration(timestamp: Long): String {
 
 
-            Row(
-                modifier = Modifier.padding(20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
+        val instant = Instant.ofEpochSecond(timestamp)
+        val now = Instant.now()
 
-                    Text(text = "Shares Owned:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Avg. Cost/Share:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Total Cost:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Change:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Market Value:")
-                }
-                Column(modifier = Modifier.padding(start = 15.dp)) {
+        val duration = Duration.between(instant, now)
+        val days = duration.toDays()
+        val hours = duration.toHours() % 24
 
-                    Text(text = portfolioData.getInt("quantity").toString())
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", portfolioData.getDouble("avgCost")))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", portfolioData.getDouble("totalCost")))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", portfolioData.getDouble("change")))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", portfolioData.getDouble("marketValue")))
-                }
+        return when {
+            days > 0 -> {
+                val dayString = if (days == 1L) "day" else "days"
+                "$days $dayString ago"
             }
 
-            Button(
-                onClick = { /*TODO*/ },
-                modifier = Modifier.padding(end = 20.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0FA128),
-                    contentColor = Color(0xFFFFFFFF)
-                )
-            ) {
-                Text("Trade")
-            }
-        }
-
-    }
-
-    @Composable
-    fun StatsSection() {
-        val quoteData by stockDetailViewModel.quoteData.collectAsState()
-
-        Row(modifier = Modifier.padding(20.dp)) {
-            Row(modifier = Modifier.weight(1f)) {
-                Column {
-                    Text("Open Price:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Low Price:")
-                }
-
-                Column {
-                    Text(text = String.format("%.2f", quoteData.getDouble("o")))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", quoteData.getDouble("l")))
-
-                }
-            }
-            Row(modifier = Modifier.weight(1f)) {
-                Column {
-                    Text("High Price:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Prev. Close:")
-                }
-                Column {
-                    Text(text = String.format("%.2f", quoteData.getDouble("h")))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = String.format("%.2f", quoteData.getDouble("pc")))
-                }
-
+            else -> {
+                val hourString = if (hours == 1L) "hour" else "hours"
+                "$hours $hourString ago"
             }
         }
     }
 
-    @Composable
-    fun AboutSection() {
 
-        val profileData by stockDetailViewModel.profileData.collectAsState()
+    fun validateInput(input: String): Boolean {
 
-        val peerData by stockDetailViewModel.peerData.collectAsState()
-        val peerList = mutableListOf<String>()
-        for (i in 0 until peerData.length()) {
-            peerList.add(peerData.getString(i))
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-        ) {
-            Column {
-                Text(text = "IPO Start Date")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Industry")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Webpage")
+        val intValue = input.toIntOrNull()
 
 
-            }
-            Column(modifier = Modifier.padding(start = 20.dp)) {
-                Text(text = profileData.getString("ipo"))
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = profileData.getString("finnhubIndustry"))
-                Spacer(modifier = Modifier.height(10.dp))
-
-                HyperLink(
-                    linkText = profileData.getString("weburl"),
-                    link = profileData.getString("weburl"),
-                    true
-                )
-
-
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-        ) {
-            Text(text = "Company Peers")
-
-            LazyRow(modifier = Modifier.padding(start = 8.dp, top = 3.dp)) {
-                items(count = peerList.size) { index ->
-
-                    HyperLink(linkText = peerList[index], link = peerList[index], false)
-                    Spacer(modifier = Modifier.width(5.dp))
-
-                }
-            }
-
-        }
+        return intValue != null && intValue > 0
     }
+
 
     @Composable
     fun HyperLink(linkText: String, link: String, url: Boolean) {
