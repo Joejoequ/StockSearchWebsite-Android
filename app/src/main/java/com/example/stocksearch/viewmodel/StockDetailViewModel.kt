@@ -1,11 +1,11 @@
-package com.example.stocksearch
+package com.example.stocksearch.viewmodel
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,6 +22,8 @@ class StockDetailViewModel() : ViewModel() {
     val newsData: MutableStateFlow<JSONArray> = MutableStateFlow(JSONArray())
     val insiderData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
     val portfolioData: MutableStateFlow<JSONObject> = MutableStateFlow(JSONObject())
+
+    var ifInWatchlist = mutableStateOf(false)
 
     init {
         val newStock = JSONObject()
@@ -70,6 +72,15 @@ class StockDetailViewModel() : ViewModel() {
                 }
             )
 
+
+            DataService.checkIfInWatchlistFromAPI(stockSymbol = symbolInput,
+                callback = { response ->
+
+                    ifInWatchlist.value =  response.equals("true", ignoreCase = true)
+                },
+                errorCallback = { error ->
+                }
+            )
 
 
             DataService.fetchNewsDataFromAPI(stockSymbol = symbolInput,
@@ -187,6 +198,34 @@ class StockDetailViewModel() : ViewModel() {
 
 
     }
+
+    fun addToWatchlist(symbol:String,context:Context){
+        DataService.addStockToWatchlistAPI(stockSymbol = symbol,
+            callback = { response ->
+               if (response.getString("message")=="SUCCESS"){
+                   ifInWatchlist.value=true
+                   Toast.makeText(context, symbol+" is added to favorites", Toast.LENGTH_SHORT).show()
+               }
+            },
+            errorCallback = { error ->
+            }
+        )
+    }
+
+    fun removeFromWatchlist(symbol:String,context:Context){
+        DataService.removeStockFromWatchlistAPI(stockSymbol = symbol,
+            callback = { response ->
+                if (response.getString("message")=="SUCCESS"){
+                    ifInWatchlist.value=false
+                    Toast.makeText(context, symbol+" is removed from favorites", Toast.LENGTH_SHORT).show()
+                }
+            },
+            errorCallback = { error ->
+            }
+        )
+    }
+
+
 
 
 }

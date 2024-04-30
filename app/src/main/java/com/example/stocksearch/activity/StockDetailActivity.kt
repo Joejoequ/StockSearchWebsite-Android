@@ -1,4 +1,4 @@
-package com.example.stocksearch
+package com.example.stocksearch.activity
 
 
 import android.content.Intent
@@ -60,7 +60,6 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -105,7 +104,8 @@ import com.example.stocksearch.ui.theme.StockSearchTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
-import org.json.JSONObject
+import com.example.stocksearch.R
+import com.example.stocksearch.viewmodel.StockDetailViewModel
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
@@ -510,8 +510,6 @@ class StockDetailActivity : ComponentActivity() {
             }
 
 
-
-
         } else {
 
             Box(
@@ -559,11 +557,10 @@ class StockDetailActivity : ComponentActivity() {
                                 fontWeight = FontWeight.Bold
                             ), color = Color.Black
                         )
-                        Text(news.getString("summary"),color = Color.Black)
-                        Row (Modifier.padding(top = 5.dp)){
+                        Text(news.getString("summary"), color = Color.Black)
+                        Row(Modifier.padding(top = 5.dp)) {
                             IconButton(
                                 onClick = {
-
 
 
                                     uriHandler.openUri(news.getString("url"))
@@ -579,7 +576,11 @@ class StockDetailActivity : ComponentActivity() {
 
                             IconButton(
                                 onClick = {
-                                    uriHandler.openUri("https://twitter.com/intent/tweet?text="+news.getString("headline")+"&url="+news.getString("url"))
+                                    uriHandler.openUri(
+                                        "https://twitter.com/intent/tweet?text=" + news.getString(
+                                            "headline"
+                                        ) + "&url=" + news.getString("url")
+                                    )
 
 
                                 },
@@ -597,7 +598,11 @@ class StockDetailActivity : ComponentActivity() {
                             IconButton(
                                 onClick = {
 
-                                    uriHandler.openUri("https://www.facebook.com/sharer/sharer.php?u="+news.getString("url"))
+                                    uriHandler.openUri(
+                                        "https://www.facebook.com/sharer/sharer.php?u=" + news.getString(
+                                            "url"
+                                        )
+                                    )
 
 
                                 },
@@ -664,8 +669,23 @@ class StockDetailActivity : ComponentActivity() {
                 },
 
                 actions = {
-                    IconButton(onClick = { }) {
-                        Icon(painter = painterResource(id = R.drawable.star_border), null)
+
+                    val context = LocalContext.current
+                    val inWatchlist by remember {
+                        stockDetailViewModel.ifInWatchlist
+                    }
+                    if (!inWatchlist)
+                        IconButton(onClick = {
+                            stockDetailViewModel.addToWatchlist(searchedStock,context)
+                        }) {
+                            Icon(painter = painterResource(id = R.drawable.star_border), null)
+                        }
+                    else {
+                        IconButton(onClick = {
+                            stockDetailViewModel.removeFromWatchlist(searchedStock,context)
+                        }) {
+                            Icon(painter = painterResource(id = R.drawable.full_star), null)
+                        }
                     }
                 }
             )

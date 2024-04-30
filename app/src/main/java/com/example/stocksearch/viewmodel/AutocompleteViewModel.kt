@@ -1,8 +1,9 @@
-package com.example.stocksearch
+package com.example.stocksearch.viewmodel
 
 import DataService
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.example.stocksearch.Stock
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class AutocompleteViewModel() : ViewModel() {

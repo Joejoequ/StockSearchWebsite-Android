@@ -1,16 +1,14 @@
-package com.example.stocksearch
+package com.example.stocksearch.viewmodel
 
 import DataService
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.Dispatchers
+import com.example.stocksearch.Stock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 

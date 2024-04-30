@@ -1,18 +1,15 @@
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.Request
 import com.android.volley.RequestQueue
-import com.android.volley.Response
-import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.stocksearch.UserService
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.coroutines.resume
 
 object DataService {
 
@@ -272,6 +269,96 @@ object DataService {
             DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
             DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
         )
+
+        requestQueue.add(request)
+
+    }
+
+
+
+    fun checkIfInWatchlistFromAPI(
+        stockSymbol: String,
+        callback: (String) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/watchlist/ifStockInWatchlist?symbol=$stockSymbol&userid=${UserService.getUserId()}"
+        val request =  StringRequest(Request.Method.GET, url,
+            { response ->
+
+                Log.d("IfInWatchlist API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("IfInWatchlist API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+        request.retryPolicy = DefaultRetryPolicy(
+            timeout,
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        requestQueue.add(request)
+
+    }
+
+
+
+
+    fun addStockToWatchlistAPI(
+        stockSymbol: String,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/watchlist"
+
+        val jsonObject = JSONObject().apply {
+            put("userid", UserService.getUserId())
+            put("stockSymbol", stockSymbol)
+        }
+
+        val request =  JsonObjectRequest(Request.Method.POST, url,jsonObject,
+            { response ->
+
+                Log.d("addStockToWatchlist API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("addStockToWatchlist API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+
+
+        requestQueue.add(request)
+
+    }
+
+
+
+
+    fun removeStockFromWatchlistAPI(
+        stockSymbol: String,
+        callback: (JSONObject) -> Unit,
+        errorCallback: (String) -> Unit
+    ) {
+        val url = "https://cs571a3-418806.uc.r.appspot.com/api/watchlist/${UserService.getUserId()}/${stockSymbol}"
+
+
+
+        val request =  JsonObjectRequest(Request.Method.DELETE, url,null,
+            { response ->
+
+                Log.d("removeStockFromWatchlist API Response", response.toString())
+                callback(response)
+            },
+            { error ->
+                Log.d("removeStockFromWatchlist API Response", "Error")
+                errorCallback("Error: ${error.message}")
+            })
+
+
 
         requestQueue.add(request)
 
